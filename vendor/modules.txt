@@ -1,12 +1,12 @@
 # github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
 # github.com/containers/image v3.0.2+incompatible
-github.com/containers/image/pkg/sysregistriesv2
 github.com/containers/image/docker/reference
+github.com/containers/image/pkg/sysregistriesv2
 github.com/containers/image/types
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/google/go-cmp v0.3.0
@@ -15,27 +15,33 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/gofuzz v1.0.0
+# github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
+# github.com/json-iterator/go v1.1.8
+github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+github.com/modern-go/concurrent
+# github.com/modern-go/reflect2 v1.0.1
+github.com/modern-go/reflect2
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
-github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/image-spec/specs-go
-# github.com/openshift/api v3.9.1-0.20191002160657-d92789481b05+incompatible
-github.com/openshift/api/operator/v1alpha1
+github.com/opencontainers/image-spec/specs-go/v1
+# github.com/openshift/api v0.0.0-20200326160804-ecb9283fe820
 github.com/openshift/api/config/v1
-# github.com/openshift/library-go v0.0.0-20191003152030-97c62d8a2901
-github.com/openshift/library-go/alpha-build-machinery
-github.com/openshift/library-go/alpha-build-machinery/make
-github.com/openshift/library-go/alpha-build-machinery/make/lib
-github.com/openshift/library-go/alpha-build-machinery/make/targets
-github.com/openshift/library-go/alpha-build-machinery/make/targets/golang
-github.com/openshift/library-go/alpha-build-machinery/make/targets/openshift
-github.com/openshift/library-go/alpha-build-machinery/make/targets/openshift/operator
-github.com/openshift/library-go/alpha-build-machinery/scripts
+github.com/openshift/api/operator/v1alpha1
+# github.com/openshift/build-machinery-go v0.0.0-20200211121458-5e3d6e570160
+github.com/openshift/build-machinery-go
+github.com/openshift/build-machinery-go/make
+github.com/openshift/build-machinery-go/make/lib
+github.com/openshift/build-machinery-go/make/targets
+github.com/openshift/build-machinery-go/make/targets/golang
+github.com/openshift/build-machinery-go/make/targets/openshift
+github.com/openshift/build-machinery-go/make/targets/openshift/operator
+github.com/openshift/build-machinery-go/scripts
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
@@ -45,46 +51,48 @@ github.com/sirupsen/logrus
 # github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
-golang.org/x/net/http2
+# golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
 golang.org/x/net/http/httpguts
+golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-# golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f
+# golang.org/x/sys v0.0.0-20191022100944-742c48ecaeb7
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
 golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-golang.org/x/text/transform
-# gopkg.in/inf.v0 v0.9.0
+# gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.2.4
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# k8s.io/api v0.0.0-20191003035645-10e821c09743
+# k8s.io/api v0.18.0
 k8s.io/api/core/v1
-# k8s.io/apimachinery v0.0.0-20191003115452-c31ffd88d5d2
-k8s.io/apimachinery/pkg/apis/meta/v1
-k8s.io/apimachinery/pkg/runtime
-k8s.io/apimachinery/pkg/runtime/schema
-k8s.io/apimachinery/pkg/util/diff
+# k8s.io/apimachinery v0.18.0
 k8s.io/apimachinery/pkg/api/resource
+k8s.io/apimachinery/pkg/apis/meta/v1
 k8s.io/apimachinery/pkg/conversion
+k8s.io/apimachinery/pkg/conversion/queryparams
 k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/labels
+k8s.io/apimachinery/pkg/runtime
+k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/types
-k8s.io/apimachinery/pkg/util/intstr
-k8s.io/apimachinery/pkg/util/runtime
-k8s.io/apimachinery/pkg/watch
-k8s.io/apimachinery/pkg/conversion/queryparams
+k8s.io/apimachinery/pkg/util/diff
 k8s.io/apimachinery/pkg/util/errors
+k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/util/json
 k8s.io/apimachinery/pkg/util/naming
-k8s.io/apimachinery/pkg/util/sets
-k8s.io/apimachinery/third_party/forked/golang/reflect
-k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/net
+k8s.io/apimachinery/pkg/util/runtime
+k8s.io/apimachinery/pkg/util/sets
+k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/validation/field
+k8s.io/apimachinery/pkg/watch
+k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/klog v1.0.0
 k8s.io/klog
+# sigs.k8s.io/structured-merge-diff/v3 v3.0.0
+sigs.k8s.io/structured-merge-diff/v3/value
