@@ -9,31 +9,69 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/containers/image/pkg/sysregistriesv2"
-	"github.com/containers/image/types"
+	"github.com/containers/image/v5/pkg/sysregistriesv2"
+	"github.com/containers/image/v5/types"
 	apioperatorsv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/diff"
 )
 
-func TestScopeMatchesRegistry(t *testing.T) {
+func TestScopeIsNestedInsideScope(t *testing.T) {
 	for _, tt := range []struct {
-		scope, reg string
-		expected   bool
+		subScope, superScope string
+		expected             bool
 	}{
-		{"quay.io", "example.com", false},             // Host mismatch
-		{"quay.io", "quay.io", true},                  // Host match
-		{"quay.io:443", "quay.io", false},             // Port mismatch (although reg is a prefix of scope)
-		{"quay.io:443", "quay.io:444", false},         // Port mismatch
-		{"quay.io.example.com", "quay.io", false},     // Host mismatch (although reg is a prefix of scope)
-		{"quay.io2", "quay.io", false},                // Host mismatch (although reg is a prefix of scope)
-		{"quay.io/ns1", "quay.io", true},              // Valid namespace
-		{"quay.io/ns1/ns2/ns3", "quay.io", true},      // Valid namespace
-		{"quay.io/ns1/ns2/ns3", "not-quay.io", false}, // Host mismatch
+		{"quay.io", "example.com", false},                   // Host mismatch
+		{"quay.io", "quay.io", true},                        // Host match
+		{"quay.io:443", "quay.io", false},                   // Port mismatch (although reg is a prefix of scope)
+		{"quay.io:443", "quay.io:444", false},               // Port mismatch
+		{"quay.io.example.com", "quay.io", false},           // Host mismatch (although reg is a prefix of scope)
+		{"quay.io2", "quay.io", false},                      // Host mismatch (although reg is a prefix of scope)
+		{"quay.io/ns1", "quay.io", true},                    // Valid namespace
+		{"quay.io/ns1/ns2/ns3", "quay.io", true},            // Valid namespace
+		{"quay.io/ns1/ns2/ns3", "not-quay.io", false},       // Host mismatch
+		{"bar/example.foo", "*.foo", false},                 // Wildcards only match host names
+		{"example/bar.foo/quay.io", "*.foo", false},         // Wildcard does not match hostname
+		{"example/bar.foo:400", "*.foo", false},             // Wildcard does not match hostname
+		{"foo.example.com", "*.example.com", true},          // subScope matches superScope
+		{"*.foo.example.com", "*.example.com", true},        // subScope matches superScope
+		{"foo.example.com/bar", "*.example.com", true},      // subScope matches superScope
+		{"foo.registry.com", "*.example.com", false},        // subScope does not match superScope
+		{"foo.example.com", "**.example.com", false},        // subScope does not match superScope
+		{"foo.example.com", "example.*.com", false},         // subScope does not match superScope
+		{"foo.example.com", "*.example.com/foo/bar", false}, // subScope does not match superScope
+		{"foo.example.com:443/bar/baz", "*.example.com", true},
+		{"foo.example.com:443/bar/baz", "*.example.com/bar/baz", false},
+		{"foo.example.com", "*example.com", false},
+		{"foo.example.com", "*/example.com", false},
 	} {
-		t.Run(fmt.Sprintf("%#v, %#v", tt.scope, tt.reg), func(t *testing.T) {
-			res := scopeMatchesRegistry(tt.scope, tt.reg)
+		t.Run(fmt.Sprintf("%#v, %#v", tt.subScope, tt.superScope), func(t *testing.T) {
+			res := scopeIsNestedInsideScope(tt.subScope, tt.superScope)
+			assert.Equal(t, tt.expected, res)
+		})
+	}
+}
+
+func TestIsValidRegistriesConfScope(t *testing.T) {
+	for _, tt := range []struct {
+		scope    string
+		expected bool
+	}{
+		{"example.com", true},                // Valid registry
+		{"*.example.com", true},              // Valid wildcard
+		{"**.example.com", false},            // Invalid wildcard entry
+		{"example.*.com", false},             // Invalid wildcard entry
+		{"*.example.com/foo/bar", false},     // Invalid wildcard entry
+		{"*.example.com:foo", false},         // Invalid wildcard entry
+		{"*.example.com/foo:sha@bar", false}, // Invalid wildcard entry
+		{"*.example.com.*.bar.com", false},   // Invalid wildcard entry
+		{"*example.com", false},
+		{"*/example.com", false},
+		{"*.*example.com", false},
+	} {
+		t.Run(fmt.Sprintf("%#v", tt.scope), func(t *testing.T) {
+			res := IsValidRegistriesConfScope(tt.scope)
 			assert.Equal(t, tt.expected, res)
 		})
 	}
@@ -223,15 +261,9 @@ func TestEditRegistriesConfig(t *testing.T) {
 				Registries: []sysregistriesv2.Registry{
 					{
 						Endpoint: sysregistriesv2.Endpoint{
-							Location: "registry.access.redhat.com",
-							Insecure: true,
+							Location: "blocked.com",
 						},
-					},
-					{
-						Endpoint: sysregistriesv2.Endpoint{
-							Location: "insecure.com",
-							Insecure: true,
-						},
+						Blocked: true,
 					},
 					{
 						Endpoint: sysregistriesv2.Endpoint{
@@ -242,30 +274,36 @@ func TestEditRegistriesConfig(t *testing.T) {
 					},
 					{
 						Endpoint: sysregistriesv2.Endpoint{
-							Location: "blocked.com",
+							Location: "docker.io",
 						},
 						Blocked: true,
 					},
 					{
 						Endpoint: sysregistriesv2.Endpoint{
-							Location: "docker.io",
+							Location: "registry.access.redhat.com",
+							Insecure: true,
 						},
-						Blocked: true,
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "insecure.com",
+							Insecure: true,
+						},
 					},
 				},
 			},
 		},
 		{
-			name:     "insecure+blocked prefixes",
-			insecure: []string{"insecure.com"},
-			blocked:  []string{"blocked.com"},
+			name:     "insecure+blocked prefixes with wildcard entries",
+			insecure: []string{"insecure.com", "*.insecure-example.com", "*.insecure.blocked-example.com"},
+			blocked:  []string{"blocked.com", "*.blocked.insecure-example.com", "*.blocked-example.com"},
 			icspRules: []*apioperatorsv1alpha1.ImageContentSourcePolicy{
 				{
 					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
 						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{ // other.com is neither insecure nor blocked
 							{Source: "insecure.com/ns-i1", Mirrors: []string{"blocked.com/ns-b1", "other.com/ns-o1"}},
 							{Source: "blocked.com/ns-b/ns2-b", Mirrors: []string{"other.com/ns-o2", "insecure.com/ns-i2"}},
-							{Source: "other.com/ns-o3", Mirrors: []string{"insecure.com/ns-i2", "blocked.com/ns-b/ns3-b"}},
+							{Source: "other.com/ns-o3", Mirrors: []string{"insecure.com/ns-i2", "blocked.com/ns-b/ns3-b", "foo.insecure-example.com/bar"}},
 						},
 					},
 				},
@@ -305,13 +343,7 @@ func TestEditRegistriesConfig(t *testing.T) {
 						Mirrors: []sysregistriesv2.Endpoint{
 							{Location: "insecure.com/ns-i2", Insecure: true},
 							{Location: "blocked.com/ns-b/ns3-b"},
-						},
-					},
-
-					{
-						Endpoint: sysregistriesv2.Endpoint{
-							Location: "insecure.com",
-							Insecure: true,
+							{Location: "foo.insecure-example.com/bar", Insecure: true},
 						},
 					},
 					{
@@ -319,6 +351,36 @@ func TestEditRegistriesConfig(t *testing.T) {
 							Location: "blocked.com",
 						},
 						Blocked: true,
+					},
+					{
+						Prefix:  "*.blocked.insecure-example.com",
+						Blocked: true,
+						Endpoint: sysregistriesv2.Endpoint{
+							Insecure: true,
+						},
+					},
+					{
+						Prefix:  "*.blocked-example.com",
+						Blocked: true,
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "insecure.com",
+							Insecure: true,
+						},
+					},
+					{
+						Prefix: "*.insecure-example.com",
+						Endpoint: sysregistriesv2.Endpoint{
+							Insecure: true,
+						},
+					},
+					{
+						Prefix:  "*.insecure.blocked-example.com",
+						Blocked: true,
+						Endpoint: sysregistriesv2.Endpoint{
+							Insecure: true,
+						},
 					},
 				},
 			},
