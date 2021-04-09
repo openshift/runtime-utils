@@ -4,20 +4,32 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/containers/image/pkg/sysregistriesv2"
+	"github.com/containers/image/v5/pkg/sysregistriesv2"
 	apioperatorsv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 )
 
-// scopeMatchesRegistry returns true if a scope value (as in sysregistriesv2.Registry.Prefix / sysregistriesv2.Endpoint.Location)
-// matches a host[:port] value in reg.
-func scopeMatchesRegistry(scope, reg string) bool {
+// regMatchesScope returns true if a scope value (as in sysregistriesv2.Registry.Prefix / sysregistriesv2.Endpoint.Location)
+// matches a host[:port] value in reg or if it is a sub-scope of reg.
+func regMatchesScope(scope, reg string) bool {
+	match := false
 	if reg == scope {
 		return true
 	}
+	// return true if a scope value matches a host[:port] value in reg
 	if len(scope) > len(reg) {
-		return strings.HasPrefix(scope, reg) && scope[len(reg)] == '/'
+		match = strings.HasPrefix(scope, reg) && scope[len(reg)] == '/'
 	}
-	return false
+	// return true if scope is a value that is a sub-scope of reg
+	// e.g *.foo.example.com is a sub-scope of *.example.com or bar.example.com/bar is a sub-scope of *.example.com
+	if strings.HasPrefix(reg, "*.") {
+		match = strings.HasSuffix(scope, reg[1:]) || strings.Contains(scope, reg[1:]+"/") || strings.Contains(scope, reg[1:]+":")
+		// Check that we are not matching on namespace or repo e.g *.foo should not match quay/bar.foo or quay/bar.foo/example or quay/bar.foo:400
+		regIndex := strings.Index(scope, reg[1:])
+		if regIndex > 0 && strings.Contains(scope[:regIndex+1], "/") {
+			return false
+		}
+	}
+	return match
 }
 
 // rdmContainsARealMirror returns true if set.Mirrors contains at least one entry that is not set.Source.
@@ -96,27 +108,46 @@ func mergedMirrorSets(icspRules []*apioperatorsv1alpha1.ImageContentSourcePolicy
 }
 
 // EditRegistriesConfig edits, IN PLACE, the /etc/containers/registries.conf configuration provided in config, to:
-// - Mark whole registries in insecureRegistries as insecure (TLS is not required, and TLS certificate verification is not required when TLS is used)
-// - Mark whole registries in blockedRegistries as blocked (any attempts to access them fail)
+// - Mark whole registries or wildcard entries in insecureRegistries as insecure (TLS is not required, and TLS certificate verification is not required when TLS is used)
+// - Mark whole registries or wildcard entries in blockedRegistries as blocked (any attempts to access them fail)
 // - Implement ImageContentSourcePolicy rules in icspRules.
 // “Whole registries” above means that the configuration applies to everything on that registry, including any possible separately-configured
 // namespaces/repositories within that registry.
+// "Wildcard entries" above means that we accept wildcards in the form of *.example.registry.com for insecure and blocked registries only. We do not
+// accept them for mirror configuration.
+// NOTE: Validation of wildcard entries is done before EditRegistriesConfig is called in the MCO code.
 func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureRegistries, blockedRegistries []string, icspRules []*apioperatorsv1alpha1.ImageContentSourcePolicy) error {
+
+	// addRegistryEntry creates a Registry object corresponding to scope.
+	// NOTE: The pointer is valid only until the next getRegistryEntry call.
+	addRegistryEntry := func(scope string) *sysregistriesv2.Registry {
+		// If scope is a wildcard entry, add it to the registry Prefix
+		reg := sysregistriesv2.Registry{}
+		if strings.HasPrefix(scope, "*.") {
+			reg.Prefix = scope
+			// Otherwise it is a regular entry so add it to the registry endpoint Location
+		} else {
+			reg.Location = scope
+		}
+		config.Registries = append(config.Registries, reg)
+		return &config.Registries[len(config.Registries)-1]
+	}
+
 	// getRegistryEntry returns a pointer to a modifiable Registry object corresponding to scope,
 	// creating it if necessary.
-	// NOTE: We never generate entries with Prefix != Location, so everything in updateRegistriesConfig
-	// only checks Location.
+	// If Prefix doesn't have a wildcard entry, we check Location for regular entries.
 	// NOTE: The pointer is valid only until the next getRegistryEntry call.
 	getRegistryEntry := func(scope string) *sysregistriesv2.Registry {
 		for i := range config.Registries {
-			if config.Registries[i].Location == scope {
+			reg := config.Registries[i].Location
+			if config.Registries[i].Prefix != "" {
+				reg = config.Registries[i].Prefix
+			}
+			if reg == scope {
 				return &config.Registries[i]
 			}
 		}
-		config.Registries = append(config.Registries, sysregistriesv2.Registry{
-			Endpoint: sysregistriesv2.Endpoint{Location: scope},
-		})
-		return &config.Registries[len(config.Registries)-1]
+		return addRegistryEntry(scope)
 	}
 
 	mirrorSets, err := mergedMirrorSets(icspRules)
@@ -131,7 +162,17 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureRegi
 		}
 	}
 
-	// insecureRegistries and blockedRegistries are lists of registries; now that mirrors can be configured at a namespace/repo level,
+	// Add the blocked registry entries to the registries list so that we can find sub-scopes of insecure registries and set both the
+	// blocked and insecure flags accordingly.
+	// e.g *.blocked.insecure.com is a sub-scope of *.insecure.com and should have both the insecure and blocked options set to true. If
+	// we don't add the blocked registries list to the registries config list before going through the insecure registries we won't be able
+	// to check if *.blocked.insecure.com is a sub-scope of *.insecure.com as it won't exist in the registries config list and will not have
+	// insecure=true, so we need to populate the registries config list with the blocked registries before moving on.
+	for _, reg := range blockedRegistries {
+		getRegistryEntry(reg)
+	}
+
+	// insecureRegistries and blockedRegistries are lists of registries or wildcards; now that mirrors can be configured at a namespace/repo level,
 	// configuration at the namespace/repo level would shadow the registry-level entries; so, propagate the insecure/blocked
 	// flags to the child namespaces as well.
 	for _, insecureReg := range insecureRegistries {
@@ -139,12 +180,17 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureRegi
 		reg.Insecure = true
 		for i := range config.Registries {
 			reg := &config.Registries[i]
-			if scopeMatchesRegistry(reg.Location, insecureReg) {
+			scope := reg.Location
+			// Set scope to Prefix if it exists
+			if reg.Prefix != "" {
+				scope = reg.Prefix
+			}
+			if regMatchesScope(scope, insecureReg) {
 				reg.Insecure = true
 			}
 			for j := range reg.Mirrors {
 				mirror := &reg.Mirrors[j]
-				if scopeMatchesRegistry(mirror.Location, insecureReg) {
+				if regMatchesScope(mirror.Location, insecureReg) {
 					mirror.Insecure = true
 				}
 			}
@@ -155,10 +201,31 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureRegi
 		reg.Blocked = true
 		for i := range config.Registries {
 			reg := &config.Registries[i]
-			if scopeMatchesRegistry(reg.Location, blockedReg) {
+			scope := reg.Location
+			// Set scope to Prefix if it exists
+			if reg.Prefix != "" {
+				scope = reg.Prefix
+			}
+			if regMatchesScope(scope, blockedReg) {
 				reg.Blocked = true
 			}
 		}
 	}
 	return nil
+}
+
+// IsValidRegistryOrWildcardScope returns true if scope is a valid registry or wildcard entry such as "*.registry.com"
+// This function can be used to validate the registries entries prior to calling EditRegistriesConfig
+// in the MCO or builds code
+func IsValidRegistryOrWildcardScope(scope string) bool {
+	// If scope does not contain the wildcard character, we will assume it is a regular registry entry, which is valid
+	if !strings.Contains(scope, "*") {
+		return true
+	}
+	// If it contains the wildcard character, check that it doesn't contain any invalid characters.
+	// The only valid scope would be when it has the prefix "*."
+	if strings.ContainsAny(scope[1:], "/@:*") {
+		return false
+	}
+	return true
 }
