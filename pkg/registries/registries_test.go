@@ -47,7 +47,7 @@ func TestScopeIsNestedInsideScope(t *testing.T) {
 		{"foo.example.com", "*/example.com", false},
 	} {
 		t.Run(fmt.Sprintf("%#v, %#v", tt.subScope, tt.superScope), func(t *testing.T) {
-			res := scopeIsNestedInsideScope(tt.subScope, tt.superScope)
+			res := ScopeIsNestedInsideScope(tt.subScope, tt.superScope)
 			assert.Equal(t, tt.expected, res)
 		})
 	}

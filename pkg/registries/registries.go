@@ -8,9 +8,9 @@ import (
 	apioperatorsv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 )
 
-// scopeIsNestedInsideScope returns true if a subScope value (as in sysregistriesv2.Registry.Prefix / sysregistriesv2.Endpoint.Location)
+// ScopeIsNestedInsideScope returns true if a subScope value (as in sysregistriesv2.Registry.Prefix / sysregistriesv2.Endpoint.Location)
 // is a sub-scope of superScope.
-func scopeIsNestedInsideScope(subScope, superScope string) bool {
+func ScopeIsNestedInsideScope(subScope, superScope string) bool {
 	match := false
 	if superScope == subScope {
 		return true
@@ -188,12 +188,12 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 			if reg.Prefix != "" {
 				scope = reg.Prefix
 			}
-			if scopeIsNestedInsideScope(scope, insecureScope) {
+			if ScopeIsNestedInsideScope(scope, insecureScope) {
 				reg.Insecure = true
 			}
 			for j := range reg.Mirrors {
 				mirror := &reg.Mirrors[j]
-				if scopeIsNestedInsideScope(mirror.Location, insecureScope) {
+				if ScopeIsNestedInsideScope(mirror.Location, insecureScope) {
 					mirror.Insecure = true
 				}
 			}
@@ -209,7 +209,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 			if reg.Prefix != "" {
 				scope = reg.Prefix
 			}
-			if scopeIsNestedInsideScope(scope, blockedScope) {
+			if ScopeIsNestedInsideScope(scope, blockedScope) {
 				reg.Blocked = true
 			}
 		}
