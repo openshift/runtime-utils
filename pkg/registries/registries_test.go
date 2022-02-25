@@ -69,6 +69,7 @@ func TestIsValidRegistriesConfScope(t *testing.T) {
 		{"*example.com", false},
 		{"*/example.com", false},
 		{"*.*example.com", false},
+		{"", false}, // Invalid empty string entry
 	} {
 		t.Run(fmt.Sprintf("%#v", tt.scope), func(t *testing.T) {
 			res := IsValidRegistriesConfScope(tt.scope)

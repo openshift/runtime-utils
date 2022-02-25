@@ -221,6 +221,9 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 // This function can be used to validate the registries entries prior to calling EditRegistriesConfig
 // in the MCO or builds code
 func IsValidRegistriesConfScope(scope string) bool {
+	if scope == "" {
+		return false
+	}
 	// If scope does not contain the wildcard character, we will assume it is a regular registry entry, which is valid
 	if !strings.Contains(scope, "*") {
 		return true
