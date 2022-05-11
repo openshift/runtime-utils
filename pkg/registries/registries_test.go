@@ -14,7 +14,6 @@ import (
 	apioperatorsv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func TestScopeIsNestedInsideScope(t *testing.T) {
@@ -400,9 +399,7 @@ func TestEditRegistriesConfig(t *testing.T) {
 			}
 			// This assumes a specific order of Registries entries, which does not actually matter; ideally, this would
 			// sort the two arrays before comparing, but right now hard-coding the order works well enough.
-			if !reflect.DeepEqual(config, tt.want) {
-				t.Errorf("updateRegistriesConfig() Diff:\n %s", diff.ObjectGoPrintDiff(tt.want, config))
-			}
+			require.Equal(t, tt.want, config)
 			// Ensure that the generated configuration is actually valid.
 			buf := bytes.Buffer{}
 			err = toml.NewEncoder(&buf).Encode(config)
