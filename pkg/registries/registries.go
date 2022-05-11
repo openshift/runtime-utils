@@ -152,9 +152,9 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 	// NOTE: The pointer is valid only until the next getRegistryEntry call.
 	getRegistryEntry := func(scope string) *sysregistriesv2.Registry {
 		for i := range config.Registries {
-			reg := registryScope(&config.Registries[i])
-			if reg == scope {
-				return &config.Registries[i]
+			reg := &config.Registries[i]
+			if registryScope(reg) == scope {
+				return reg
 			}
 		}
 		return addRegistryEntry(scope)
@@ -190,8 +190,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 		reg.Insecure = true
 		for i := range config.Registries {
 			reg := &config.Registries[i]
-			scope := registryScope(reg)
-			if ScopeIsNestedInsideScope(scope, insecureScope) {
+			if ScopeIsNestedInsideScope(registryScope(reg), insecureScope) {
 				reg.Insecure = true
 			}
 			for j := range reg.Mirrors {
@@ -207,8 +206,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 		reg.Blocked = true
 		for i := range config.Registries {
 			reg := &config.Registries[i]
-			scope := registryScope(reg)
-			if ScopeIsNestedInsideScope(scope, blockedScope) {
+			if ScopeIsNestedInsideScope(registryScope(reg), blockedScope) {
 				reg.Blocked = true
 			}
 		}
