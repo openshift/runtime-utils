@@ -109,6 +109,16 @@ func mergedMirrorSets(icspRules []*apioperatorsv1alpha1.ImageContentSourcePolicy
 	return res, nil
 }
 
+// registryScope returns the scope used for matching a registry entry.
+// (Eventually https://github.com/containers/image/pull/1368 should allow us to only set Prefix
+// entries, and this function will be unnecessary.)
+func registryScope(reg *sysregistriesv2.Registry) string {
+	if reg.Prefix != "" {
+		return reg.Prefix
+	}
+	return reg.Location
+}
+
 // EditRegistriesConfig edits, IN PLACE, the /etc/containers/registries.conf configuration provided in config, to:
 // - Mark scope entries in insecureScopes as insecure (TLS is not required, and TLS certificate verification is not required when TLS is used)
 // - Mark scope entries in blockedScopes as blocked (any attempts to access them fail)
@@ -142,10 +152,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 	// NOTE: The pointer is valid only until the next getRegistryEntry call.
 	getRegistryEntry := func(scope string) *sysregistriesv2.Registry {
 		for i := range config.Registries {
-			reg := config.Registries[i].Location
-			if config.Registries[i].Prefix != "" {
-				reg = config.Registries[i].Prefix
-			}
+			reg := registryScope(&config.Registries[i])
 			if reg == scope {
 				return &config.Registries[i]
 			}
@@ -183,11 +190,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 		reg.Insecure = true
 		for i := range config.Registries {
 			reg := &config.Registries[i]
-			scope := reg.Location
-			// Set scope to Prefix if it exists
-			if reg.Prefix != "" {
-				scope = reg.Prefix
-			}
+			scope := registryScope(reg)
 			if ScopeIsNestedInsideScope(scope, insecureScope) {
 				reg.Insecure = true
 			}
@@ -204,11 +207,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 		reg.Blocked = true
 		for i := range config.Registries {
 			reg := &config.Registries[i]
-			scope := reg.Location
-			// Set scope to Prefix if it exists
-			if reg.Prefix != "" {
-				scope = reg.Prefix
-			}
+			scope := registryScope(reg)
 			if ScopeIsNestedInsideScope(scope, blockedScope) {
 				reg.Blocked = true
 			}
