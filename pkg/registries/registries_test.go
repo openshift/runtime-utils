@@ -229,6 +229,33 @@ func TestMergedMirrorSets(t *testing.T) {
 	}
 }
 
+func TestMirrorsAdjustedForNestedScope(t *testing.T) {
+	// Invalid input
+	for _, tt := range []struct {
+		mirroredScope, subScope string
+	}{
+		{"mirrored.com", "unrelated.com"},
+		{"*.example.com", "*.nested.example.com"},
+	} {
+		_, err := mirrorsAdjustedForNestedScope(tt.mirroredScope, tt.subScope, []sysregistriesv2.Endpoint{})
+		assert.Error(t, err, fmt.Sprintf("%#v", tt))
+	}
+
+	// A smoke test for valid input
+	res, err := mirrorsAdjustedForNestedScope("example.com", "example.com/subscope",
+		[]sysregistriesv2.Endpoint{
+			{Location: "mirror-1.com"},
+			{Location: "mirror-2.com/nested"},
+			{Location: "example.com"}, // We usually add the source the last mirror entry.
+		})
+	require.NoError(t, err)
+	assert.Equal(t, []sysregistriesv2.Endpoint{
+		{Location: "mirror-1.com/subscope"},
+		{Location: "mirror-2.com/nested/subscope"},
+		{Location: "example.com/subscope"},
+	}, res)
+}
+
 func TestEditRegistriesConfig(t *testing.T) {
 	templateConfig := sysregistriesv2.V2RegistriesConf{ // This matches templates/*/01-*-container-runtime/_base/files/container-registries.yaml
 		UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
@@ -376,6 +403,65 @@ func TestEditRegistriesConfig(t *testing.T) {
 						Blocked: true,
 						Endpoint: sysregistriesv2.Endpoint{
 							Insecure: true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:     "insecure+blocked scopes inside a configured mirror",
+			insecure: []string{"primary.com/top/insecure"},
+			blocked:  []string{"primary.com/top/blocked"},
+			icspRules: []*apioperatorsv1alpha1.ImageContentSourcePolicy{
+				{
+					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
+						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
+							{Source: "primary.com/top", Mirrors: []string{"mirror.com/primary"}},
+							{Source: "primary.com/top/insecure/more-specific", Mirrors: []string{"mirror.com/more-specific"}},
+						},
+					},
+				},
+			},
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top",
+						},
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary"},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/insecure/more-specific",
+							Insecure: true,
+						},
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/more-specific"},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/blocked",
+						},
+						Blocked:            true,
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary/blocked"},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/insecure",
+							Insecure: true,
+						},
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary/insecure"},
 						},
 					},
 				},

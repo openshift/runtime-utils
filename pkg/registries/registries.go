@@ -1,6 +1,7 @@
 package registries
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -109,6 +110,32 @@ func mergedMirrorSets(icspRules []*apioperatorsv1alpha1.ImageContentSourcePolicy
 	return res, nil
 }
 
+// mirrorsAdjustedForNestedScope returns mirrors from mirroredScope, updated
+// so that they can be configured in a nested subScope, without any change in the
+// semantics of the mirrors.
+func mirrorsAdjustedForNestedScope(mirroredScope, subScope string, mirrors []sysregistriesv2.Endpoint) ([]sysregistriesv2.Endpoint, error) {
+	// Sanity checks, just to be sure.
+	if !ScopeIsNestedInsideScope(subScope, mirroredScope) {
+		return nil, fmt.Errorf("internal error: mirrorsAdjustedForNestedScope for %#v and non-subscope %#v", mirroredScope, subScope)
+	}
+	if strings.HasPrefix(mirroredScope, "*.") {
+		return nil, fmt.Errorf("internal error: mirrorsAdjustedForNestedScope for a wildcard scope %#v", mirroredScope)
+	}
+	// If mirorredScope is not a wildcard, ScopeIsNestedInsideScope ensures that subScope is not a wildcard either
+	// So, both scopes should be simple namespaces, and ScopeIsNestedInsideScope should guarantee this.
+	if !strings.HasPrefix(subScope, mirroredScope) {
+		return nil, fmt.Errorf("internal error: mirrorsAdjustedForNestedScope with unexpected scopes %#v and %#v", mirroredScope, subScope)
+	}
+	adjustment := subScope[len(mirroredScope):]
+	res := []sysregistriesv2.Endpoint{}
+	for _, original := range mirrors {
+		updated := original
+		updated.Location = updated.Location + adjustment
+		res = append(res, updated)
+	}
+	return res, nil
+}
+
 // registryScope returns the scope used for matching a registry entry.
 // (Eventually https://github.com/containers/image/pull/1368 should allow us to only set Prefix
 // entries, and this function will be unnecessary.)
@@ -184,7 +211,7 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 
 	// any of insecureScopes, blockedScopes, and mirrors, can be configured at a namespace/repo level,
 	// and in V2RegistriesConf, only the most precise match is used; so, propagate the insecure/blocked
-	// flags to the child namespaces as well.
+	// flags, and mirror configurations, to the child namespaces as well.
 	for _, insecureScope := range insecureScopes {
 		reg := getRegistryEntry(insecureScope)
 		reg.Insecure = true
@@ -208,6 +235,25 @@ func EditRegistriesConfig(config *sysregistriesv2.V2RegistriesConf, insecureScop
 			reg := &config.Registries[i]
 			if ScopeIsNestedInsideScope(registryScope(reg), blockedScope) {
 				reg.Blocked = true
+			}
+		}
+	}
+	for _, mirrorSet := range mirrorSets {
+		mirroredReg := getRegistryEntry(mirrorSet.Source)
+		mirroredScope := registryScope(mirroredReg)
+		for i := range config.Registries {
+			reg := &config.Registries[i]
+			scope := registryScope(reg)
+			// We have already iterated through all of mirrorSets.
+			// So, if there is any mirror defined for a more specific sub-scope of mirrorSet.Source,
+			// it must already exist with non-empty reg.Mirrors.
+			if scope != mirroredScope && ScopeIsNestedInsideScope(scope, mirroredScope) && len(reg.Mirrors) == 0 {
+				reg.MirrorByDigestOnly = mirroredReg.MirrorByDigestOnly
+				updated, err := mirrorsAdjustedForNestedScope(mirroredScope, scope, mirroredReg.Mirrors)
+				if err != nil {
+					return err
+				}
+				reg.Mirrors = updated
 			}
 		}
 	}
