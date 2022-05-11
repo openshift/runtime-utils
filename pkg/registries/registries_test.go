@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -225,10 +224,7 @@ func TestMergedMirrorSets(t *testing.T) {
 				t.Errorf("Error %v", err)
 				return
 			}
-			if !reflect.DeepEqual(res, c.result) {
-				t.Errorf("Result %#v, expected %#v", res, c.result)
-				return
-			}
+			assert.Equal(t, c.result, res)
 		})
 	}
 }
