@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -14,7 +13,6 @@ import (
 	apioperatorsv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func TestScopeIsNestedInsideScope(t *testing.T) {
@@ -226,12 +224,36 @@ func TestMergedMirrorSets(t *testing.T) {
 				t.Errorf("Error %v", err)
 				return
 			}
-			if !reflect.DeepEqual(res, c.result) {
-				t.Errorf("Result %#v, expected %#v", res, c.result)
-				return
-			}
+			assert.Equal(t, c.result, res)
 		})
 	}
+}
+
+func TestMirrorsAdjustedForNestedScope(t *testing.T) {
+	// Invalid input
+	for _, tt := range []struct {
+		mirroredScope, subScope string
+	}{
+		{"mirrored.com", "unrelated.com"},
+		{"*.example.com", "*.nested.example.com"},
+	} {
+		_, err := mirrorsAdjustedForNestedScope(tt.mirroredScope, tt.subScope, []sysregistriesv2.Endpoint{})
+		assert.Error(t, err, fmt.Sprintf("%#v", tt))
+	}
+
+	// A smoke test for valid input
+	res, err := mirrorsAdjustedForNestedScope("example.com", "example.com/subscope",
+		[]sysregistriesv2.Endpoint{
+			{Location: "mirror-1.com"},
+			{Location: "mirror-2.com/nested"},
+			{Location: "example.com"}, // We usually add the source the last mirror entry.
+		})
+	require.NoError(t, err)
+	assert.Equal(t, []sysregistriesv2.Endpoint{
+		{Location: "mirror-1.com/subscope"},
+		{Location: "mirror-2.com/nested/subscope"},
+		{Location: "example.com/subscope"},
+	}, res)
 }
 
 func TestEditRegistriesConfig(t *testing.T) {
@@ -386,6 +408,65 @@ func TestEditRegistriesConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "insecure+blocked scopes inside a configured mirror",
+			insecure: []string{"primary.com/top/insecure"},
+			blocked:  []string{"primary.com/top/blocked"},
+			icspRules: []*apioperatorsv1alpha1.ImageContentSourcePolicy{
+				{
+					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
+						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
+							{Source: "primary.com/top", Mirrors: []string{"mirror.com/primary"}},
+							{Source: "primary.com/top/insecure/more-specific", Mirrors: []string{"mirror.com/more-specific"}},
+						},
+					},
+				},
+			},
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top",
+						},
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary"},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/insecure/more-specific",
+							Insecure: true,
+						},
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/more-specific"},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/blocked",
+						},
+						Blocked:            true,
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary/blocked"},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/insecure",
+							Insecure: true,
+						},
+						MirrorByDigestOnly: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary/insecure"},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -400,9 +481,7 @@ func TestEditRegistriesConfig(t *testing.T) {
 			}
 			// This assumes a specific order of Registries entries, which does not actually matter; ideally, this would
 			// sort the two arrays before comparing, but right now hard-coding the order works well enough.
-			if !reflect.DeepEqual(config, tt.want) {
-				t.Errorf("updateRegistriesConfig() Diff:\n %s", diff.ObjectGoPrintDiff(tt.want, config))
-			}
+			require.Equal(t, tt.want, config)
 			// Ensure that the generated configuration is actually valid.
 			buf := bytes.Buffer{}
 			err = toml.NewEncoder(&buf).Encode(config)
