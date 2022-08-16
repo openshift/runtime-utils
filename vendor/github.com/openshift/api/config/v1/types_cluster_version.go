@@ -225,7 +225,11 @@ type UpdateHistory struct {
 type ClusterID string
 
 // ClusterVersionCapability enumerates optional, core cluster components.
+<<<<<<< HEAD
 // +kubebuilder:validation:Enum=openshift-samples;baremetal;marketplace;Console;Insights;Storage;CSISnapshot
+=======
+// +kubebuilder:validation:Enum=openshift-samples;baremetal;marketplace
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 type ClusterVersionCapability string
 
 const (
@@ -245,6 +249,7 @@ const (
 	// supplies Operator Lifecycle Manager (OLM) users with default catalogs of
 	// "optional" operators.
 	ClusterVersionCapabilityMarketplace ClusterVersionCapability = "marketplace"
+<<<<<<< HEAD
 
 	// ClusterVersionCapabilityConsole manages the Console operator which
 	// installs and maintains the web console.
@@ -268,11 +273,14 @@ const (
 	// VolumeSnapshot CRD objects and manages the creation and deletion
 	// lifecycle of volume snapshots
 	ClusterVersionCapabilityCSISnapshot ClusterVersionCapability = "CSISnapshot"
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 )
 
 // KnownClusterVersionCapabilities includes all known optional, core cluster components.
 var KnownClusterVersionCapabilities = []ClusterVersionCapability{
 	ClusterVersionCapabilityBaremetal,
+<<<<<<< HEAD
 	ClusterVersionCapabilityConsole,
 	ClusterVersionCapabilityInsights,
 	ClusterVersionCapabilityMarketplace,
@@ -283,6 +291,14 @@ var KnownClusterVersionCapabilities = []ClusterVersionCapability{
 
 // ClusterVersionCapabilitySet defines sets of cluster version capabilities.
 // +kubebuilder:validation:Enum=None;v4.11;v4.12;vCurrent
+=======
+	ClusterVersionCapabilityMarketplace,
+	ClusterVersionCapabilityOpenShiftSamples,
+}
+
+// ClusterVersionCapabilitySet defines sets of cluster version capabilities.
+// +kubebuilder:validation:Enum=None;v4.11;vCurrent
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 type ClusterVersionCapabilitySet string
 
 const (
@@ -296,12 +312,15 @@ const (
 	// version of OpenShift is installed.
 	ClusterVersionCapabilitySet4_11 ClusterVersionCapabilitySet = "v4.11"
 
+<<<<<<< HEAD
 	// ClusterVersionCapabilitySet4_12 is the recommended set of
 	// optional capabilities to enable for the 4.12 version of
 	// OpenShift.  This list will remain the same no matter which
 	// version of OpenShift is installed.
 	ClusterVersionCapabilitySet4_12 ClusterVersionCapabilitySet = "v4.12"
 
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// ClusterVersionCapabilitySetCurrent is the recommended set
 	// of optional capabilities to enable for the cluster's
 	// current version of OpenShift.
@@ -312,6 +331,7 @@ const (
 var ClusterVersionCapabilitySets = map[ClusterVersionCapabilitySet][]ClusterVersionCapability{
 	ClusterVersionCapabilitySetNone: {},
 	ClusterVersionCapabilitySet4_11: {
+<<<<<<< HEAD
 		ClusterVersionCapabilityBaremetal,
 		ClusterVersionCapabilityMarketplace,
 		ClusterVersionCapabilityOpenShiftSamples,
@@ -333,6 +353,16 @@ var ClusterVersionCapabilitySets = map[ClusterVersionCapabilitySet][]ClusterVers
 		ClusterVersionCapabilityStorage,
 		ClusterVersionCapabilityOpenShiftSamples,
 		ClusterVersionCapabilityCSISnapshot,
+=======
+		ClusterVersionCapabilityOpenShiftSamples,
+		ClusterVersionCapabilityBaremetal,
+		ClusterVersionCapabilityMarketplace,
+	},
+	ClusterVersionCapabilitySetCurrent: {
+		ClusterVersionCapabilityOpenShiftSamples,
+		ClusterVersionCapabilityBaremetal,
+		ClusterVersionCapabilityMarketplace,
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	},
 }
 

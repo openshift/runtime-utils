@@ -353,7 +353,11 @@ func fromUnstructured(sv, dv reflect.Value, ctx *fromUnstructuredContext) error 
 		return mapFromUnstructured(sv, dv, ctx)
 	case reflect.Slice:
 		return sliceFromUnstructured(sv, dv, ctx)
+<<<<<<< HEAD
 	case reflect.Pointer:
+=======
+	case reflect.Ptr:
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return pointerFromUnstructured(sv, dv, ctx)
 	case reflect.Struct:
 		return structFromUnstructured(sv, dv, ctx)
@@ -502,7 +506,11 @@ func pointerFromUnstructured(sv, dv reflect.Value, ctx *fromUnstructuredContext)
 	}
 	dv.Set(reflect.New(dt.Elem()))
 	switch st.Kind() {
+<<<<<<< HEAD
 	case reflect.Pointer, reflect.Interface:
+=======
+	case reflect.Ptr, reflect.Interface:
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return fromUnstructured(sv.Elem(), dv.Elem(), ctx)
 	default:
 		return fromUnstructured(sv, dv.Elem(), ctx)

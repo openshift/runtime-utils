@@ -3095,6 +3095,10 @@ type PodSpec struct {
 	// pod to perform user-initiated actions such as debugging. This list cannot be specified when
 	// creating a pod, and it cannot be modified by updating the pod spec. In order to add an
 	// ephemeral container to an existing pod, use the pod's ephemeralcontainers subresource.
+<<<<<<< HEAD
+=======
+	// This field is beta-level and available on clusters that haven't disabled the EphemeralContainers feature gate.
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// +optional
 	// +patchMergeKey=name
 	// +patchStrategy=merge
@@ -3290,7 +3294,10 @@ type PodSpec struct {
 	// If the OS field is set to windows, following fields must be unset:
 	// - spec.hostPID
 	// - spec.hostIPC
+<<<<<<< HEAD
 	// - spec.hostUsers
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// - spec.securityContext.seLinuxOptions
 	// - spec.securityContext.seccompProfile
 	// - spec.securityContext.fsGroup
@@ -3310,6 +3317,7 @@ type PodSpec struct {
 	// - spec.containers[*].securityContext.runAsUser
 	// - spec.containers[*].securityContext.runAsGroup
 	// +optional
+<<<<<<< HEAD
 	OS *PodOS `json:"os,omitempty" protobuf:"bytes,36,opt,name=os"`
 	// Use the host's user namespace.
 	// Optional: Default to true.
@@ -3323,6 +3331,10 @@ type PodSpec struct {
 	// +k8s:conversion-gen=false
 	// +optional
 	HostUsers *bool `json:"hostUsers,omitempty" protobuf:"bytes,37,opt,name=hostUsers"`
+=======
+	// This is a beta field and requires the IdentifyPodOS feature
+	OS *PodOS `json:"os,omitempty" protobuf:"bytes,36,opt,name=os"`
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // OSName is the set of OS'es that can be used in OS.
@@ -3394,8 +3406,12 @@ type TopologySpreadConstraint struct {
 	// We consider each <key, value> as a "bucket", and try to put balanced number
 	// of pods into each bucket.
 	// We define a domain as a particular instance of a topology.
+<<<<<<< HEAD
 	// Also, we define an eligible domain as a domain whose nodes meet the requirements of
 	// nodeAffinityPolicy and nodeTaintsPolicy.
+=======
+	// Also, we define an eligible domain as a domain whose nodes match the node selector.
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology.
 	// And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology.
 	// It's a required field.
@@ -3450,6 +3466,7 @@ type TopologySpreadConstraint struct {
 	// because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
 	// it will violate MaxSkew.
 	//
+<<<<<<< HEAD
 	// This is a beta field and requires the MinDomainsInPodTopologySpread feature gate to be enabled (enabled by default).
 	// +optional
 	MinDomains *int32 `json:"minDomains,omitempty" protobuf:"varint,5,opt,name=minDomains"`
@@ -3481,6 +3498,11 @@ type TopologySpreadConstraint struct {
 	// +listType=atomic
 	// +optional
 	MatchLabelKeys []string `json:"matchLabelKeys,omitempty" protobuf:"bytes,8,opt,name=matchLabelKeys"`
+=======
+	// This is an alpha field and requires enabling MinDomainsInPodTopologySpread feature gate.
+	// +optional
+	MinDomains *int32 `json:"minDomains,omitempty" protobuf:"varint,5,opt,name=minDomains"`
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 const (
@@ -3830,6 +3852,11 @@ var _ = Container(EphemeralContainerCommon{})
 //
 // To add an ephemeral container, use the ephemeralcontainers subresource of an existing
 // Pod. Ephemeral containers may not be removed or restarted.
+<<<<<<< HEAD
+=======
+//
+// This is a beta feature available on clusters that haven't disabled the EphemeralContainers feature gate.
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 type EphemeralContainer struct {
 	// Ephemeral containers have all of the fields of Container, plus additional fields
 	// specific to ephemeral containers. Fields in common with Container are in the
@@ -3931,6 +3958,10 @@ type PodStatus struct {
 	// +optional
 	QOSClass PodQOSClass `json:"qosClass,omitempty" protobuf:"bytes,9,rep,name=qosClass"`
 	// Status for any ephemeral containers that have run in this pod.
+<<<<<<< HEAD
+=======
+	// This field is beta-level and available on clusters that haven't disabled the EphemeralContainers feature gate.
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// +optional
 	EphemeralContainerStatuses []ContainerStatus `json:"ephemeralContainerStatuses,omitempty" protobuf:"bytes,13,rep,name=ephemeralContainerStatuses"`
 }
@@ -4231,12 +4262,18 @@ const (
 	ServiceTypeExternalName ServiceType = "ExternalName"
 )
 
+<<<<<<< HEAD
 // ServiceInternalTrafficPolicyType describes how nodes distribute service traffic they
 // receive on the ClusterIP.
+=======
+// ServiceInternalTrafficPolicyType describes the type of traffic routing for
+// internal traffic
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 // +enum
 type ServiceInternalTrafficPolicyType string
 
 const (
+<<<<<<< HEAD
 	// ServiceInternalTrafficPolicyCluster routes traffic to all endpoints.
 	ServiceInternalTrafficPolicyCluster ServiceInternalTrafficPolicyType = "Cluster"
 
@@ -4248,6 +4285,17 @@ const (
 // ServiceExternalTrafficPolicyType describes how nodes distribute service traffic they
 // receive on one of the Service's "externally-facing" addresses (NodePorts, ExternalIPs,
 // and LoadBalancer IPs).
+=======
+	// ServiceInternalTrafficPolicyCluster routes traffic to all endpoints
+	ServiceInternalTrafficPolicyCluster ServiceInternalTrafficPolicyType = "Cluster"
+
+	// ServiceInternalTrafficPolicyLocal only routes to node-local
+	// endpoints, otherwise drops the traffic
+	ServiceInternalTrafficPolicyLocal ServiceInternalTrafficPolicyType = "Local"
+)
+
+// Service External Traffic Policy Type string
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 // +enum
 type ServiceExternalTrafficPolicyType string
 
@@ -4323,9 +4371,15 @@ const (
 	IPv6Protocol IPFamily = "IPv6"
 )
 
+<<<<<<< HEAD
 // IPFamilyPolicy represents the dual-stack-ness requested or required by a Service
 // +enum
 type IPFamilyPolicy string
+=======
+// IPFamilyPolicyType represents the dual-stack-ness requested or required by a Service
+// +enum
+type IPFamilyPolicyType string
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 
 const (
 	// IPFamilyPolicySingleStack indicates that this service is required to have a single IPFamily.
@@ -4582,12 +4636,21 @@ type ServiceSpec struct {
 	// +optional
 	LoadBalancerClass *string `json:"loadBalancerClass,omitempty" protobuf:"bytes,21,opt,name=loadBalancerClass"`
 
+<<<<<<< HEAD
 	// InternalTrafficPolicy describes how nodes distribute service traffic they
 	// receive on the ClusterIP. If set to "Local", the proxy will assume that pods
 	// only want to talk to endpoints of the service on the same node as the pod,
 	// dropping the traffic if there are no local endpoints. The default value,
 	// "Cluster", uses the standard behavior of routing to all endpoints evenly
 	// (possibly modified by topology and other features).
+=======
+	// InternalTrafficPolicy specifies if the cluster internal traffic
+	// should be routed to all endpoints or node-local endpoints only.
+	// "Cluster" routes internal traffic to a Service to all endpoints.
+	// "Local" routes traffic to node-local endpoints only, traffic is
+	// dropped if no node-local endpoints are ready.
+	// The default value is "Cluster".
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// +featureGate=ServiceInternalTrafficPolicy
 	// +optional
 	InternalTrafficPolicy *ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy,omitempty" protobuf:"bytes,22,opt,name=internalTrafficPolicy"`
@@ -5142,7 +5205,11 @@ type PodSignature struct {
 // Describe a container image
 type ContainerImage struct {
 	// Names by which this image is known.
+<<<<<<< HEAD
 	// e.g. ["kubernetes.example/hyperkube:v1.0.7", "cloud-vendor.registry.example/cloud-vendor/hyperkube:v1.0.7"]
+=======
+	// e.g. ["k8s.gcr.io/hyperkube:v1.0.7", "dockerhub.io/google_containers/hyperkube:v1.0.7"]
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// +optional
 	Names []string `json:"names" protobuf:"bytes,1,rep,name=names"`
 	// The size of the image in bytes.

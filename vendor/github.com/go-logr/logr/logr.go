@@ -43,9 +43,13 @@ limitations under the License.
 //
 // Info() and Error() are very similar, but they are separate methods so that
 // LogSink implementations can choose to do things like attach additional
+<<<<<<< HEAD
 // information (such as stack traces) on calls to Error(). Error() messages are
 // always logged, regardless of the current verbosity.  If there is no error
 // instance available, passing nil is valid.
+=======
+// information (such as stack traces) on calls to Error().
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 //
 // Verbosity
 //
@@ -55,7 +59,10 @@ limitations under the License.
 // Log-lines with V-levels that are not enabled (as per the LogSink) will not
 // be written.  Level V(0) is the default, and logger.V(0).Info() has the same
 // meaning as logger.Info().  Negative V-levels have the same meaning as V(0).
+<<<<<<< HEAD
 // Error messages do not have a verbosity level and are always logged.
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 //
 // Where we might have written:
 //   if flVerbose >= 2 {
@@ -114,6 +121,7 @@ limitations under the License.
 // Keys are arbitrary strings, but should generally be constant values.  Values
 // may be any Go value, but how the value is formatted is determined by the
 // LogSink implementation.
+<<<<<<< HEAD
 //
 // Logger instances are meant to be passed around by value. Code that receives
 // such a value can call its methods without having to check whether the
@@ -123,6 +131,8 @@ limitations under the License.
 // because it has no LogSink. Therefore this null logger should never be passed
 // around. For cases where passing a logger is optional, a pointer to Logger
 // should be used.
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 //
 // Key Naming Conventions
 //
@@ -265,6 +275,7 @@ func (l Logger) Info(msg string, keysAndValues ...interface{}) {
 // Error logs an error, with the given message and key/value pairs as context.
 // It functions similarly to Info, but may have unique behavior, and should be
 // preferred for logging errors (see the package documentations for more
+<<<<<<< HEAD
 // information). The log message will always be emitted, regardless of
 // verbosity level.
 //
@@ -272,6 +283,13 @@ func (l Logger) Info(msg string, keysAndValues ...interface{}) {
 // while the err argument should be used to attach the actual error that
 // triggered this log line, if present. The err parameter is optional
 // and nil may be passed instead of an error instance.
+=======
+// information).
+//
+// The msg argument should be used to add context to any underlying error,
+// while the err argument should be used to attach the actual error that
+// triggered this log line, if present.
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 func (l Logger) Error(err error, msg string, keysAndValues ...interface{}) {
 	if withHelper, ok := l.sink.(CallStackHelperLogSink); ok {
 		withHelper.GetCallStackHelper()()

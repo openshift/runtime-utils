@@ -3,11 +3,20 @@ module github.com/openshift/runtime-utils
 go 1.18
 
 require (
+<<<<<<< HEAD
 	github.com/BurntSushi/toml v0.3.1
 	github.com/containers/image/v5 v5.11.0
 	github.com/openshift/api v0.0.0-20220901185337-0b39f81154fa
 	github.com/openshift/build-machinery-go v0.0.0-20220720161851-9b4f0386f6b0
 	github.com/stretchr/testify v1.7.0
+=======
+	github.com/BurntSushi/toml v1.2.0
+	github.com/containers/image/v5 v5.22.0
+	github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68
+	github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3
+	github.com/stretchr/testify v1.8.0
+	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 )
 
 require (

@@ -18,6 +18,10 @@ package json
 
 import (
 	gojson "encoding/json"
+<<<<<<< HEAD
+=======
+	"fmt"
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	"strconv"
 	"strings"
 )
@@ -70,6 +74,7 @@ func (d *Decoder) DisallowDuplicateFields() {
 	d.d.disallowDuplicateFields = true
 }
 
+<<<<<<< HEAD
 func (d *decodeState) newFieldError(errType strictErrType, field string) *strictError {
 	if len(d.strictFieldStack) > 0 {
 		return &strictError{
@@ -81,26 +86,48 @@ func (d *decodeState) newFieldError(errType strictErrType, field string) *strict
 			ErrType: errType,
 			Path:    field,
 		}
+=======
+func (d *decodeState) newFieldError(msg, field string) error {
+	if len(d.strictFieldStack) > 0 {
+		return fmt.Errorf("%s %q", msg, strings.Join(d.strictFieldStack, "")+"."+field)
+	} else {
+		return fmt.Errorf("%s %q", msg, field)
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	}
 }
 
 // saveStrictError saves a strict decoding error,
 // for reporting at the end of the unmarshal if no other errors occurred.
+<<<<<<< HEAD
 func (d *decodeState) saveStrictError(err *strictError) {
+=======
+func (d *decodeState) saveStrictError(err error) {
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// prevent excessive numbers of accumulated errors
 	if len(d.savedStrictErrors) >= 100 {
 		return
 	}
 	// dedupe accumulated strict errors
 	if d.seenStrictErrors == nil {
+<<<<<<< HEAD
 		d.seenStrictErrors = map[strictError]struct{}{}
 	}
 	if _, seen := d.seenStrictErrors[*err]; seen {
+=======
+		d.seenStrictErrors = map[string]struct{}{}
+	}
+	msg := err.Error()
+	if _, seen := d.seenStrictErrors[msg]; seen {
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return
 	}
 
 	// accumulate the error
+<<<<<<< HEAD
 	d.seenStrictErrors[*err] = struct{}{}
+=======
+	d.seenStrictErrors[msg] = struct{}{}
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	d.savedStrictErrors = append(d.savedStrictErrors, err)
 }
 
@@ -122,6 +149,7 @@ func (d *decodeState) appendStrictFieldStackIndex(i int) {
 	d.strictFieldStack = append(d.strictFieldStack, "[", strconv.Itoa(i), "]")
 }
 
+<<<<<<< HEAD
 type strictErrType string
 
 const (
@@ -149,6 +177,8 @@ func (e *strictError) SetFieldPath(path string) {
 	e.Path = path
 }
 
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 // UnmarshalStrictError holds errors resulting from use of strict disallow___ decoder directives.
 // If this is returned from Unmarshal(), it means the decoding was successful in all other respects.
 type UnmarshalStrictError struct {

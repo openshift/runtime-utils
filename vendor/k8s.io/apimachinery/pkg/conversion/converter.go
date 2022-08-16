@@ -179,7 +179,11 @@ func (c *Converter) RegisterGeneratedUntypedConversionFunc(a, b interface{}, fn 
 func (c *Converter) RegisterIgnoredConversion(from, to interface{}) error {
 	typeFrom := reflect.TypeOf(from)
 	typeTo := reflect.TypeOf(to)
+<<<<<<< HEAD
 	if typeFrom.Kind() != reflect.Pointer {
+=======
+	if typeFrom.Kind() != reflect.Ptr {
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return fmt.Errorf("expected pointer arg for 'from' param 0, got: %v", typeFrom)
 	}
 	if typeTo.Kind() != reflect.Pointer {

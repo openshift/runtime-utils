@@ -587,6 +587,7 @@ type OvirtPlatformStatus struct {
 	// Deprecated: Use IngressIPs instead.
 	IngressIP string `json:"ingressIP,omitempty"`
 
+<<<<<<< HEAD
 	// ingressIPs are the external IPs which route to the default ingress
 	// controller. The IPs are suitable targets of a wildcard DNS record used to
 	// resolve default route host names. In dual stack clusters this list
@@ -596,6 +597,8 @@ type OvirtPlatformStatus struct {
 	// +kubebuilder:validation:MaxItems=2
 	IngressIPs []string `json:"ingressIPs"`
 
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// deprecated: as of 4.6, this field is no longer set or honored.  It will be removed in a future release.
 	NodeDNSIP string `json:"nodeDNSIP,omitempty"`
 }
@@ -666,10 +669,13 @@ type IBMCloudPlatformStatus struct {
 	// CISInstanceCRN is the CRN of the Cloud Internet Services instance managing
 	// the DNS zone for the cluster's base domain
 	CISInstanceCRN string `json:"cisInstanceCRN,omitempty"`
+<<<<<<< HEAD
 
 	// DNSInstanceCRN is the CRN of the DNS Services instance managing the DNS zone
 	// for the cluster's base domain
 	DNSInstanceCRN string `json:"dnsInstanceCRN,omitempty"`
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // KubevirtPlatformSpec holds the desired state of the kubevirt infrastructure provider.
@@ -758,10 +764,13 @@ type PowerVSPlatformStatus struct {
 	// CISInstanceCRN is the CRN of the Cloud Internet Services instance managing
 	// the DNS zone for the cluster's base domain
 	CISInstanceCRN string `json:"cisInstanceCRN,omitempty"`
+<<<<<<< HEAD
 
 	// DNSInstanceCRN is the CRN of the DNS Services instance managing the DNS zone
 	// for the cluster's base domain
 	DNSInstanceCRN string `json:"dnsInstanceCRN,omitempty"`
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // AlibabaCloudPlatformSpec holds the desired state of the Alibaba Cloud infrastructure provider.
@@ -860,6 +869,7 @@ type NutanixPlatformStatus struct {
 	// by components inside the cluster, like kubelets using the infrastructure rather
 	// than Kubernetes networking. It is the IP that the Infrastructure.status.apiServerInternalURI
 	// points to. It is the IP for a self-hosted load balancer in front of the API servers.
+<<<<<<< HEAD
 	//
 	// Deprecated: Use APIServerInternalIPs instead.
 	APIServerInternalIP string `json:"apiServerInternalIP,omitempty"`
@@ -888,6 +898,13 @@ type NutanixPlatformStatus struct {
 	// +kubebuilder:validation:Format=ip
 	// +kubebuilder:validation:MaxItems=2
 	IngressIPs []string `json:"ingressIPs"`
+=======
+	APIServerInternalIP string `json:"apiServerInternalIP,omitempty"`
+
+	// ingressIP is an external IP which routes to the default ingress controller.
+	// The IP is a suitable target of a wildcard DNS record used to resolve default route host names.
+	IngressIP string `json:"ingressIP,omitempty"`
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

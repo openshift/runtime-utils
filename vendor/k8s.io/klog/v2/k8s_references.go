@@ -77,8 +77,11 @@ func KRef(namespace, name string) ObjectRef {
 }
 
 // KObjs returns slice of ObjectRef from an slice of ObjectMeta
+<<<<<<< HEAD
 //
 // DEPRECATED: Use KObjSlice instead, it has better performance.
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 func KObjs(arg interface{}) []ObjectRef {
 	s := reflect.ValueOf(arg)
 	if s.Kind() != reflect.Slice {
@@ -94,6 +97,7 @@ func KObjs(arg interface{}) []ObjectRef {
 	}
 	return objectRefs
 }
+<<<<<<< HEAD
 
 // KObjSlice takes a slice of objects that implement the KMetadata interface
 // and returns an object that gets logged as a slice of ObjectRef values or a
@@ -156,3 +160,5 @@ func (ks kobjSlice) process() ([]interface{}, error) {
 	}
 	return objectRefs, nil
 }
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)

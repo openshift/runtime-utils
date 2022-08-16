@@ -19,9 +19,12 @@ type ImageDigestMirrorSet struct {
 	// +kubebuilder:validation:Required
 	// +required
 	Spec ImageDigestMirrorSetSpec `json:"spec"`
+<<<<<<< HEAD
 	// status contains the observed state of the resource.
 	// +optional
 	Status ImageDigestMirrorSetStatus `json:"status,omitempty"`
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // ImageDigestMirrorSetSpec is the specification of the ImageDigestMirrorSet CRD.
@@ -56,8 +59,11 @@ type ImageDigestMirrorSetSpec struct {
 	ImageDigestMirrors []ImageDigestMirrors `json:"imageDigestMirrors"`
 }
 
+<<<<<<< HEAD
 type ImageDigestMirrorSetStatus struct{}
 
+=======
+>>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ImageDigestMirrorSetList lists the items in the ImageDigestMirrorSet CRD.
