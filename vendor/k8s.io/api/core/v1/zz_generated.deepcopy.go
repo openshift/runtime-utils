@@ -3954,14 +3954,11 @@ func (in *PodSpec) DeepCopyInto(out *PodSpec) {
 		*out = new(PodOS)
 		**out = **in
 	}
-<<<<<<< HEAD
 	if in.HostUsers != nil {
 		in, out := &in.HostUsers, &out.HostUsers
 		*out = new(bool)
 		**out = **in
 	}
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	return
 }
 
@@ -5662,7 +5659,6 @@ func (in *TopologySpreadConstraint) DeepCopyInto(out *TopologySpreadConstraint) 
 		*out = new(int32)
 		**out = **in
 	}
-<<<<<<< HEAD
 	if in.NodeAffinityPolicy != nil {
 		in, out := &in.NodeAffinityPolicy, &out.NodeAffinityPolicy
 		*out = new(NodeInclusionPolicy)
@@ -5678,8 +5674,6 @@ func (in *TopologySpreadConstraint) DeepCopyInto(out *TopologySpreadConstraint) 
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	return
 }
 

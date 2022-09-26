@@ -794,11 +794,7 @@ message Container {
 // Describe a container image
 message ContainerImage {
   // Names by which this image is known.
-<<<<<<< HEAD
   // e.g. ["kubernetes.example/hyperkube:v1.0.7", "cloud-vendor.registry.example/cloud-vendor/hyperkube:v1.0.7"]
-=======
-  // e.g. ["k8s.gcr.io/hyperkube:v1.0.7", "dockerhub.io/google_containers/hyperkube:v1.0.7"]
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
   // +optional
   repeated string names = 1;
 
@@ -1209,11 +1205,6 @@ message EnvVarSource {
 //
 // To add an ephemeral container, use the ephemeralcontainers subresource of an existing
 // Pod. Ephemeral containers may not be removed or restarted.
-<<<<<<< HEAD
-=======
-//
-// This is a beta feature available on clusters that haven't disabled the EphemeralContainers feature gate.
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 message EphemeralContainer {
   // Ephemeral containers have all of the fields of Container, plus additional fields
   // specific to ephemeral containers. Fields in common with Container are in the
@@ -3497,10 +3488,6 @@ message PodSpec {
   // pod to perform user-initiated actions such as debugging. This list cannot be specified when
   // creating a pod, and it cannot be modified by updating the pod spec. In order to add an
   // ephemeral container to an existing pod, use the pod's ephemeralcontainers subresource.
-<<<<<<< HEAD
-=======
-  // This field is beta-level and available on clusters that haven't disabled the EphemeralContainers feature gate.
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
   // +optional
   // +patchMergeKey=name
   // +patchStrategy=merge
@@ -3726,10 +3713,7 @@ message PodSpec {
   // If the OS field is set to windows, following fields must be unset:
   // - spec.hostPID
   // - spec.hostIPC
-<<<<<<< HEAD
   // - spec.hostUsers
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
   // - spec.securityContext.seLinuxOptions
   // - spec.securityContext.seccompProfile
   // - spec.securityContext.fsGroup
@@ -3749,7 +3733,6 @@ message PodSpec {
   // - spec.containers[*].securityContext.runAsUser
   // - spec.containers[*].securityContext.runAsGroup
   // +optional
-<<<<<<< HEAD
   optional PodOS os = 36;
 
   // Use the host's user namespace.
@@ -3764,10 +3747,6 @@ message PodSpec {
   // +k8s:conversion-gen=false
   // +optional
   optional bool hostUsers = 37;
-=======
-  // This is a beta field and requires the IdentifyPodOS feature
-  optional PodOS os = 36;
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // PodStatus represents information about the status of a pod. Status may trail the actual
@@ -3861,10 +3840,6 @@ message PodStatus {
   optional string qosClass = 9;
 
   // Status for any ephemeral containers that have run in this pod.
-<<<<<<< HEAD
-=======
-  // This field is beta-level and available on clusters that haven't disabled the EphemeralContainers feature gate.
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
   // +optional
   repeated ContainerStatus ephemeralContainerStatuses = 13;
 }
@@ -5232,21 +5207,12 @@ message ServiceSpec {
   // +optional
   optional string loadBalancerClass = 21;
 
-<<<<<<< HEAD
   // InternalTrafficPolicy describes how nodes distribute service traffic they
   // receive on the ClusterIP. If set to "Local", the proxy will assume that pods
   // only want to talk to endpoints of the service on the same node as the pod,
   // dropping the traffic if there are no local endpoints. The default value,
   // "Cluster", uses the standard behavior of routing to all endpoints evenly
   // (possibly modified by topology and other features).
-=======
-  // InternalTrafficPolicy specifies if the cluster internal traffic
-  // should be routed to all endpoints or node-local endpoints only.
-  // "Cluster" routes internal traffic to a Service to all endpoints.
-  // "Local" routes traffic to node-local endpoints only, traffic is
-  // dropped if no node-local endpoints are ready.
-  // The default value is "Cluster".
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
   // +featureGate=ServiceInternalTrafficPolicy
   // +optional
   optional string internalTrafficPolicy = 22;
@@ -5466,12 +5432,8 @@ message TopologySpreadConstraint {
   // We consider each <key, value> as a "bucket", and try to put balanced number
   // of pods into each bucket.
   // We define a domain as a particular instance of a topology.
-<<<<<<< HEAD
   // Also, we define an eligible domain as a domain whose nodes meet the requirements of
   // nodeAffinityPolicy and nodeTaintsPolicy.
-=======
-  // Also, we define an eligible domain as a domain whose nodes match the node selector.
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
   // e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology.
   // And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology.
   // It's a required field.
@@ -5529,7 +5491,6 @@ message TopologySpreadConstraint {
   // because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones,
   // it will violate MaxSkew.
   //
-<<<<<<< HEAD
   // This is a beta field and requires the MinDomainsInPodTopologySpread feature gate to be enabled (enabled by default).
   // +optional
   optional int32 minDomains = 5;
@@ -5564,11 +5525,6 @@ message TopologySpreadConstraint {
   // +listType=atomic
   // +optional
   repeated string matchLabelKeys = 8;
-=======
-  // This is an alpha field and requires enabling MinDomainsInPodTopologySpread feature gate.
-  // +optional
-  optional int32 minDomains = 5;
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // TypedLocalObjectReference contains enough information to let you locate the

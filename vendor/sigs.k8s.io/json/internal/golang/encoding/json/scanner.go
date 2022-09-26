@@ -83,11 +83,7 @@ type scanner struct {
 }
 
 var scannerPool = sync.Pool{
-<<<<<<< HEAD
 	New: func() any {
-=======
-	New: func() interface{} {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return &scanner{}
 	},
 }

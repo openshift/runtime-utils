@@ -15,14 +15,8 @@ examples :=$(wildcard ./make/examples/*/Makefile.test)
 # Ignore old cp errors on centos7
 # Ignore different make output with `-k` option
 define update-makefile-log
-<<<<<<< HEAD
 set -o pipefail; $(MAKE) -j 1 -C "$(dir $(1))" -f "$(notdir $(1))" --no-print-directory --warn-undefined-variables $(2) > "$(1)$(subst ..,.,.$(2).log.raw)" 2>&1 || (cat "$(1)$(subst ..,.,.$(2).log.raw)" && exit 1)
 sed 's/\.\(buildDate\|versionFromGit\|commitFromGit\|gitTreeState\)="[^"]*" /.\1="<redacted_for_diff>" /g' "$(1)$(subst ..,.,.$(2).log.raw)" | \
-=======
-mkdir -p "$(3)"
-set -o pipefail; $(MAKE) -j 1 -C "$(dir $(1))" -f "$(notdir $(1))" --no-print-directory --warn-undefined-variables $(2) 2>&1 | \
-   sed 's/\.\(buildDate\|versionFromGit\|commitFromGit\|gitTreeState\)="[^"]*" /.\1="<redacted_for_diff>" /g' | \
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
    sed -E 's~/[^ ]*/(github.com/openshift/build-machinery-go/[^ ]*)~/\1~g' | \
    sed '/\/tmp\/tmp./d' | \
    sed '/git checkout -b/d' | \

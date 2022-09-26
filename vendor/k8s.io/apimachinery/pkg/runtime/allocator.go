@@ -24,7 +24,6 @@ import (
 // by caching created but unused items for later reuse, relieving pressure on the garbage collector.
 //
 // Usage:
-<<<<<<< HEAD
 //
 //	memoryAllocator := runtime.AllocatorPool.Get().(*runtime.Allocator)
 //	defer runtime.AllocatorPool.Put(memoryAllocator)
@@ -33,14 +32,6 @@ import (
 //
 //	consider introducing multiple pools for storing buffers of different sizes
 //	perhaps this could allow us to be more efficient.
-=======
-//  memoryAllocator := runtime.AllocatorPool.Get().(*runtime.Allocator)
-//  defer runtime.AllocatorPool.Put(memoryAllocator)
-//
-// A note for future:
-//  consider introducing multiple pools for storing buffers of different sizes
-//  perhaps this could allow us to be more efficient.
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 var AllocatorPool = sync.Pool{
 	New: func() interface{} {
 		return &Allocator{}
@@ -69,11 +60,7 @@ func (a *Allocator) Allocate(n uint64) []byte {
 	}
 	// grow the buffer
 	size := uint64(2*cap(a.buf)) + n
-<<<<<<< HEAD
 	a.buf = make([]byte, size)
-=======
-	a.buf = make([]byte, size, size)
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	a.buf = a.buf[:n]
 	return a.buf
 }
@@ -85,9 +72,5 @@ type SimpleAllocator struct{}
 var _ MemoryAllocator = &SimpleAllocator{}
 
 func (sa *SimpleAllocator) Allocate(n uint64) []byte {
-<<<<<<< HEAD
 	return make([]byte, n)
-=======
-	return make([]byte, n, n)
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }

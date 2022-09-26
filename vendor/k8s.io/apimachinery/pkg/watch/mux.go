@@ -247,18 +247,6 @@ func (m *Broadcaster) ActionOrDrop(action EventType, obj runtime.Object) (bool, 
 	}
 }
 
-// Action distributes the given event among all watchers, or drops it on the floor
-// if too many incoming actions are queued up.  Returns true if the action was sent,
-// false if dropped.
-func (m *Broadcaster) ActionOrDrop(action EventType, obj runtime.Object) bool {
-	select {
-	case m.incoming <- Event{action, obj}:
-		return true
-	default:
-		return false
-	}
-}
-
 // Shutdown disconnects all watchers (but any queued events will still be distributed).
 // You must not call Action or Watch* after calling Shutdown. This call blocks
 // until all events have been distributed through the outbound channels. Note

@@ -84,11 +84,8 @@ const (
 // and a list of the strict failures (if any) are returned. If no `strictOptions` are selected,
 // all supported strict checks are performed.
 //
-<<<<<<< HEAD
 // Strict errors returned will implement the FieldError interface for the specific erroneous fields.
 //
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 // Currently supported strict checks are:
 // - DisallowDuplicateFields: ensure the data contains no duplicate fields
 // - DisallowUnknownFields: ensure the data contains no unknown fields (when decoding into typed structs)
@@ -142,7 +139,6 @@ func SyntaxErrorOffset(err error) (isSyntaxError bool, offset int64) {
 		return false, 0
 	}
 }
-<<<<<<< HEAD
 
 // FieldError is an error that provides access to the path of the erroneous field
 type FieldError interface {
@@ -152,5 +148,3 @@ type FieldError interface {
 	// SetFieldPath updates the path of the erroneous field output in the error message.
 	SetFieldPath(path string)
 }
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)

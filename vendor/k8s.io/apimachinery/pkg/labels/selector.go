@@ -867,7 +867,6 @@ func (p *Parser) parseExactValue() (sets.String, error) {
 //
 // Note:
 //
-<<<<<<< HEAD
 //	(1) Inclusion - " in " - denotes that the KEY exists and is equal to any of the
 //	    VALUEs in its requirement
 //	(2) Exclusion - " notin " - denotes that the KEY is not equal to any
@@ -876,8 +875,6 @@ func (p *Parser) parseExactValue() (sets.String, error) {
 //	(4) A requirement with just a KEY - as in "y" above - denotes that
 //	    the KEY exists and can be any VALUE.
 //	(5) A requirement with just !KEY requires that the KEY not exist.
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 func Parse(selector string, opts ...field.PathOption) (Selector, error) {
 	parsedSelector, err := parse(selector, field.ToPath(opts...))
 	if err == nil {

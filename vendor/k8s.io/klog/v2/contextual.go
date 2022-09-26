@@ -34,21 +34,6 @@ import (
 // mutex locking.
 
 var (
-<<<<<<< HEAD
-=======
-	// contextualLoggingEnabled controls whether contextual logging is
-	// active. Disabling it may have some small performance benefit.
-	contextualLoggingEnabled = true
-
-	// globalLogger is the global Logger chosen by users of klog, nil if
-	// none is available.
-	globalLogger *Logger
-
-	// globalLoggerOptions contains the options that were supplied for
-	// globalLogger.
-	globalLoggerOptions loggerOptions
-
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	// klogLogger is used as fallback for logging through the normal klog code
 	// when no Logger is set.
 	klogLogger logr.Logger = logr.New(&klogger{})
@@ -84,17 +69,10 @@ func SetLogger(logger logr.Logger) {
 // routing log entries through klogr into klog and then into the actual Logger
 // backend.
 func SetLoggerWithOptions(logger logr.Logger, opts ...LoggerOption) {
-<<<<<<< HEAD
 	logging.logger = &logger
 	logging.loggerOptions = loggerOptions{}
 	for _, opt := range opts {
 		opt(&logging.loggerOptions)
-=======
-	globalLogger = &logger
-	globalLoggerOptions = loggerOptions{}
-	for _, opt := range opts {
-		opt(&globalLoggerOptions)
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	}
 }
 
@@ -129,13 +107,8 @@ type loggerOptions struct {
 // Modifying the logger is not thread-safe and should be done while no other
 // goroutines invoke log calls, usually during program initialization.
 func ClearLogger() {
-<<<<<<< HEAD
 	logging.logger = nil
 	logging.loggerOptions = loggerOptions{}
-=======
-	globalLogger = nil
-	globalLoggerOptions = loggerOptions{}
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // EnableContextualLogging controls whether contextual logging is enabled.
@@ -147,22 +120,14 @@ func ClearLogger() {
 //
 // This must be called during initialization before goroutines are started.
 func EnableContextualLogging(enabled bool) {
-<<<<<<< HEAD
 	logging.contextualLoggingEnabled = enabled
-=======
-	contextualLoggingEnabled = enabled
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 }
 
 // FromContext retrieves a logger set by the caller or, if not set,
 // falls back to the program's global logger (a Logger instance or klog
 // itself).
 func FromContext(ctx context.Context) Logger {
-<<<<<<< HEAD
 	if logging.contextualLoggingEnabled {
-=======
-	if contextualLoggingEnabled {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		if logger, err := logr.FromContext(ctx); err == nil {
 			return logger
 		}
@@ -183,17 +148,10 @@ func TODO() Logger {
 // better receive a logger via its parameters. TODO can be used as a temporary
 // solution for such code.
 func Background() Logger {
-<<<<<<< HEAD
 	if logging.loggerOptions.contextualLogger {
 		// Is non-nil because logging.loggerOptions.contextualLogger is
 		// only true if a logger was set.
 		return *logging.logger
-=======
-	if globalLoggerOptions.contextualLogger {
-		// Is non-nil because globalLoggerOptions.contextualLogger is
-		// only true if a logger was set.
-		return *globalLogger
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	}
 
 	return klogLogger
@@ -202,11 +160,7 @@ func Background() Logger {
 // LoggerWithValues returns logger.WithValues(...kv) when
 // contextual logging is enabled, otherwise the logger.
 func LoggerWithValues(logger Logger, kv ...interface{}) Logger {
-<<<<<<< HEAD
 	if logging.contextualLoggingEnabled {
-=======
-	if contextualLoggingEnabled {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return logger.WithValues(kv...)
 	}
 	return logger
@@ -215,11 +169,7 @@ func LoggerWithValues(logger Logger, kv ...interface{}) Logger {
 // LoggerWithName returns logger.WithName(name) when contextual logging is
 // enabled, otherwise the logger.
 func LoggerWithName(logger Logger, name string) Logger {
-<<<<<<< HEAD
 	if logging.contextualLoggingEnabled {
-=======
-	if contextualLoggingEnabled {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return logger.WithName(name)
 	}
 	return logger
@@ -228,11 +178,7 @@ func LoggerWithName(logger Logger, name string) Logger {
 // NewContext returns logr.NewContext(ctx, logger) when
 // contextual logging is enabled, otherwise ctx.
 func NewContext(ctx context.Context, logger Logger) context.Context {
-<<<<<<< HEAD
 	if logging.contextualLoggingEnabled {
-=======
-	if contextualLoggingEnabled {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 		return logr.NewContext(ctx, logger)
 	}
 	return ctx

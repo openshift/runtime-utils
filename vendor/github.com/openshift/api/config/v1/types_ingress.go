@@ -56,12 +56,9 @@ type IngressSpec struct {
 	// .status.componentRoutes list, where participating operators write the status of
 	// configurable routes.
 	// +optional
-<<<<<<< HEAD
 	// +listType=map
 	// +listMapKey=namespace
 	// +listMapKey=name
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	ComponentRoutes []ComponentRouteSpec `json:"componentRoutes,omitempty"`
 
 	// requiredHSTSPolicies specifies HSTS policies that are required to be set on newly created  or updated routes
@@ -88,7 +85,6 @@ type IngressSpec struct {
 	// Note that if there are no RequiredHSTSPolicies, any HSTS Policy annotation on the route is valid.
 	// +optional
 	RequiredHSTSPolicies []RequiredHSTSPolicy `json:"requiredHSTSPolicies,omitempty"`
-<<<<<<< HEAD
 
 	// loadBalancer contains the load balancer details in general which are not only specific to the underlying infrastructure
 	// provider of the current cluster and are required for Ingress Controller to work on OpenShift.
@@ -159,10 +155,6 @@ const (
 	Classic AWSLBType = "Classic"
 )
 
-=======
-}
-
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 // ConsumingUser is an alias for string which we add validation to. Currently only service accounts are supported.
 // +kubebuilder:validation:Pattern="^system:serviceaccount:[a-z0-9]([-a-z0-9]*[a-z0-9])?:[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
 // +kubebuilder:validation:MinLength=1
@@ -190,12 +182,9 @@ type IngressStatus struct {
 	// componentRoutes is where participating operators place the current route status for routes whose
 	// hostnames and serving certificates can be customized by the cluster-admin.
 	// +optional
-<<<<<<< HEAD
 	// +listType=map
 	// +listMapKey=namespace
 	// +listMapKey=name
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	ComponentRoutes []ComponentRouteStatus `json:"componentRoutes,omitempty"`
 
 	// defaultPlacement is set at installation time to control which
@@ -306,11 +295,8 @@ type ComponentRouteStatus struct {
 	//
 	// If Progressing is true, that means the component is taking some action related to the componentRoutes entry.
 	// +optional
-<<<<<<< HEAD
 	// +listType=map
 	// +listMapKey=type
-=======
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// relatedObjects is a list of resources which are useful when debugging or inspecting how spec.componentRoutes is applied.

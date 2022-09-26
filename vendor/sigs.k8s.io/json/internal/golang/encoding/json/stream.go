@@ -45,11 +45,7 @@ func (dec *Decoder) DisallowUnknownFields() { dec.d.disallowUnknownFields = true
 //
 // See the documentation for Unmarshal for details about
 // the conversion of JSON into a Go value.
-<<<<<<< HEAD
 func (dec *Decoder) Decode(v any) error {
-=======
-func (dec *Decoder) Decode(v interface{}) error {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	if dec.err != nil {
 		return dec.err
 	}
@@ -201,11 +197,7 @@ func NewEncoder(w io.Writer) *Encoder {
 //
 // See the documentation for Marshal for details about the
 // conversion of Go values to JSON.
-<<<<<<< HEAD
 func (enc *Encoder) Encode(v any) error {
-=======
-func (enc *Encoder) Encode(v interface{}) error {
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 	if enc.err != nil {
 		return enc.err
 	}
@@ -298,11 +290,7 @@ var _ Unmarshaler = (*RawMessage)(nil)
 //	string, for JSON string literals
 //	nil, for JSON null
 //
-<<<<<<< HEAD
 type Token any
-=======
-type Token interface{}
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 */
 
 const (
@@ -469,11 +457,7 @@ func (dec *Decoder) Token() (Token, error) {
 			if !dec.tokenValueAllowed() {
 				return dec.tokenError(c)
 			}
-<<<<<<< HEAD
 			var x any
-=======
-			var x interface{}
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 			if err := dec.Decode(&x); err != nil {
 				return nil, err
 			}

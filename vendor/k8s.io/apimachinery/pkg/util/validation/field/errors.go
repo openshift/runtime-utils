@@ -42,15 +42,9 @@ func (v *Error) Error() string {
 	return fmt.Sprintf("%s: %s", v.Field, v.ErrorBody())
 }
 
-<<<<<<< HEAD
 type OmitValueType struct{}
 
 var omitValue = OmitValueType{}
-=======
-type omitValueType struct{}
-
-var omitValue = omitValueType{}
->>>>>>> 268252f ( [WIP] Add support ImageDigest,TagMirrorSet CRDs)
 
 // ErrorBody returns the error message without the field name.  This is useful
 // for building nice-looking higher-level error reporting.
