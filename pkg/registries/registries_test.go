@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/containers/image/v5/pkg/sysregistriesv2"
 	"github.com/containers/image/v5/types"
+	apicfgv1 "github.com/openshift/api/config/v1"
 	apioperatorsv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,155 +77,229 @@ func TestIsValidRegistriesConfScope(t *testing.T) {
 	}
 }
 
-func TestRDMContainsARealMirror(t *testing.T) {
+func TestMirrorsContainsARealMirror(t *testing.T) {
 	const source = "source.example.com"
 
 	for _, tt := range []struct {
-		mirrors  []string
+		mirrors  []apicfgv1.ImageMirror
 		expected bool
 	}{
-		{[]string{}, false},                                  // No mirrors listed
-		{[]string{"mirror.local"}, true},                     // A single real mirror
-		{[]string{source}, false},                            // The source only
-		{[]string{source, source, source}, false},            // Source only, repeated
-		{[]string{"mirror.local", source}, true},             // Both
-		{[]string{source, "mirror.local"}, true},             // Both
-		{[]string{"m1.local", "m2.local", "m3.local"}, true}, // Multiple real mirrors
+		{[]apicfgv1.ImageMirror{}, false},                                  // No mirrors listed
+		{[]apicfgv1.ImageMirror{"mirror.local"}, true},                     // A single real mirror
+		{[]apicfgv1.ImageMirror{source}, false},                            // The source only
+		{[]apicfgv1.ImageMirror{source, source, source}, false},            // Source only, repeated
+		{[]apicfgv1.ImageMirror{"mirror.local", source}, true},             // Both
+		{[]apicfgv1.ImageMirror{source, "mirror.local"}, true},             // Both
+		{[]apicfgv1.ImageMirror{"m1.local", "m2.local", "m3.local"}, true}, // Multiple real mirrors
 	} {
 		t.Run(fmt.Sprintf("%#v", tt.mirrors), func(t *testing.T) {
-			set := apioperatorsv1alpha1.RepositoryDigestMirrors{
-				Source:  source,
-				Mirrors: tt.mirrors,
-			}
-			res := rdmContainsARealMirror(&set)
+			res := mirrorsContainsARealMirror(source, tt.mirrors)
 			assert.Equal(t, tt.expected, res)
 		})
 	}
 }
 
-func TestMergedMirrorSets(t *testing.T) {
-	for _, c := range []struct {
-		name   string
-		input  [][]apioperatorsv1alpha1.RepositoryDigestMirrors
-		result []apioperatorsv1alpha1.RepositoryDigestMirrors
-	}{
-		{
-			name:   "Empty",
-			input:  [][]apioperatorsv1alpha1.RepositoryDigestMirrors{},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{},
-		},
-		{
-			name: "Irrelevant singletons",
-			input: [][]apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{
-					{Source: "a.example.com", Mirrors: nil},
-					{Source: "b.example.com", Mirrors: []string{}},
-				},
-			},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{},
-		},
-		// The registry names below start with an irrelevant letter, usually counting from the end of the alphabet, to verify that
-		// the result is based on the order in the Sources array and is not just alphabetically-sorted.
-		{
-			name: "Separate mirror sets",
-			input: [][]apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{
-					{Source: "source.example.net", Mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}},
-				},
-				{
-					{Source: "source.example.com", Mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
-				},
-			},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{Source: "source.example.com", Mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
-				{Source: "source.example.net", Mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}},
+var mergedMirrorsetsTestcases = []struct {
+	name   string
+	input  [][]mergedMirrorSet
+	result []mergedMirrorSet
+}{
+
+	{
+		name:   "Empty",
+		input:  [][]mergedMirrorSet{},
+		result: []mergedMirrorSet{},
+	},
+	{
+		name: "Irrelevant singletons",
+		input: [][]mergedMirrorSet{
+			{
+				{source: "a.example.com", mirrors: nil},
+				{source: "b.example.com", mirrors: []string{}},
 			},
 		},
-		{
-			name: "Sets with a shared element - strict order",
-			input: [][]apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{
-					{Source: "source.example.net", Mirrors: []string{"z1.example.net", "y2.example.net"}},
-					{Source: "source.example.com", Mirrors: []string{"z1.example.com", "y2.example.com"}},
-				},
-				{
-					{Source: "source.example.net", Mirrors: []string{"y2.example.net", "x3.example.net"}},
-					{Source: "source.example.com", Mirrors: []string{"y2.example.com", "x3.example.com"}},
-				},
+		result: []mergedMirrorSet{},
+	},
+	// The registry names below start with an irrelevant letter, usually counting from the end of the alphabet, to verify that
+	// the result is based on the order in the Sources array and is not just alphabetically-sorted.
+	{
+		name: "Separate mirror sets",
+		input: [][]mergedMirrorSet{
+			{
+				{source: "source.example.net", mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}},
 			},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{Source: "source.example.com", Mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
-				{Source: "source.example.net", Mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}},
+			{
+				{source: "source.example.com", mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
 			},
 		},
-		{
-			// This is not technically impossible, and it could be in principle used to set up last-fallback mirrors that
-			// are only accessed if the source is not available.
-			// WARNING: The order in this case is unspecified by the ICSP specification, and may change at any time;
-			// this test case only ensures that the corner case is handled reasonably, and that the output is stable
-			// (i.e. the operator does not cause unnecessary changes in output objects.)
-			name: "Source included in mirrors",
-			input: [][]apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{
-					{Source: "source.example.com", Mirrors: []string{"z1.example.com", "source.example.com", "y2.example.com"}},
-					{Source: "source.example.com", Mirrors: []string{"source.example.com", "y2.example.com", "x3.example.com"}},
-				},
+		result: []mergedMirrorSet{
+			{source: "source.example.com", mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
+			{source: "source.example.net", mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}},
+		},
+	},
+	{
+		name: "Separate mirror sets with mirrorSourcePolicy set",
+		input: [][]mergedMirrorSet{
+			{
+				{source: "source.example.net", mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}, mirrorSourcePolicy: apicfgv1.NeverContactSource},
 			},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{Source: "source.example.com", Mirrors: []string{"z1.example.com", "source.example.com", "y2.example.com", "x3.example.com"}},
+			{
+				{source: "source.example.com", mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}, mirrorSourcePolicy: apicfgv1.AllowContactingSource},
 			},
 		},
-		{
-			// Worst case of the above: _only_ the source included in mirrors, even perhaps several times.
-			name: "Mirrors includes only source",
-			input: [][]apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{
-					{Source: "source.example.com", Mirrors: []string{"source.example.com"}},
-					{Source: "source.example.net", Mirrors: []string{"source.example.net", "source.example.net", "source.example.net"}},
-				},
-			},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{},
+		result: []mergedMirrorSet{
+			{source: "source.example.com", mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
+			{source: "source.example.net", mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}, mirrorSourcePolicy: apicfgv1.NeverContactSource},
 		},
-		// More complex mirror set combinations are mostly tested in TestTopoGraph
-		{
-			name: "Example",
-			input: [][]apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{ // Vendor-provided default configuration
-					{Source: "source.vendor.com", Mirrors: []string{"registry2.vendor.com"}},
-				},
-				{ // Vendor2-provided default configuration
-					{Source: "source.vendor2.com", Mirrors: []string{"registry1.vendor2.com", "registry2.vendor2.com"}},
-				},
-				{ // Admin-configured local mirrors:
-					{Source: "source.vendor.com", Mirrors: []string{"local-mirror.example.com"}},
-					// Opposite order of the vendor’s mirrors.
-					// WARNING: The order in this case is unspecified by the ICSP specification, and may change at any time;
-					// this test case only ensures that the corner case is handled reasonably, and that the output is stable
-					// (i.e. the operator does not cause unnecessary changes in output objects.)
-					{Source: "source.vendor2.com", Mirrors: []string{"local-mirror2.example.com", "registry2.vendor2.com", "registry1.vendor2.com"}},
-				},
+	},
+	{
+		name: "Sets with a shared element - strict order",
+		input: [][]mergedMirrorSet{
+			{
+				{source: "source.example.net", mirrors: []string{"z1.example.net", "y2.example.net"}},
+				{source: "source.example.com", mirrors: []string{"z1.example.com", "y2.example.com"}},
 			},
-			result: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-				{Source: "source.vendor.com", Mirrors: []string{"local-mirror.example.com", "registry2.vendor.com"}},
-				{Source: "source.vendor2.com", Mirrors: []string{"local-mirror2.example.com", "registry1.vendor2.com", "registry2.vendor2.com"}},
+			{
+				{source: "source.example.net", mirrors: []string{"y2.example.net", "x3.example.net"}},
+				{source: "source.example.com", mirrors: []string{"y2.example.com", "x3.example.com"}},
 			},
 		},
-	} {
-		t.Run(c.name, func(t *testing.T) {
+		result: []mergedMirrorSet{
+			{source: "source.example.com", mirrors: []string{"z1.example.com", "y2.example.com", "x3.example.com"}},
+			{source: "source.example.net", mirrors: []string{"z1.example.net", "y2.example.net", "x3.example.net"}},
+		},
+	},
+	{
+		// This is not technically impossible, and it could be in principle used to set up last-fallback mirrors that
+		// are only accessed if the source is not available.
+		// WARNING: The order in this case is unspecified by the ICSP specification, and may change at any time;
+		// this test case only ensures that the corner case is handled reasonably, and that the output is stable
+		// (i.e. the operator does not cause unnecessary changes in output objects.)
+		name: "Source included in mirrors",
+		input: [][]mergedMirrorSet{
+			{
+				{source: "source.example.com", mirrors: []string{"z1.example.com", "source.example.com", "y2.example.com"}},
+				{source: "source.example.com", mirrors: []string{"source.example.com", "y2.example.com", "x3.example.com"}},
+			},
+		},
+		result: []mergedMirrorSet{
+			{source: "source.example.com", mirrors: []string{"z1.example.com", "source.example.com", "y2.example.com", "x3.example.com"}},
+		},
+	},
+	{
+		// Worst case of the above: _only_ the source included in mirrors, even perhaps several times.
+		name: "Mirrors includes only source",
+		input: [][]mergedMirrorSet{
+			{
+				{source: "source.example.com", mirrors: []string{"source.example.com"}},
+				{source: "source.example.net", mirrors: []string{"source.example.net", "source.example.net", "source.example.net"}},
+			},
+		},
+		result: []mergedMirrorSet{},
+	},
+	// More complex mirror set combinations are mostly tested in TestTopoGraph
+	{
+		name: "Example",
+		input: [][]mergedMirrorSet{
+			{ // Vendor-provided default configuration
+				{source: "source.vendor.com", mirrors: []string{"registry2.vendor.com"}},
+			},
+			{ // Vendor2-provided default configuration
+				{source: "source.vendor2.com", mirrors: []string{"registry1.vendor2.com", "registry2.vendor2.com"}},
+			},
+			{ // Admin-configured local mirrors:
+				{source: "source.vendor.com", mirrors: []string{"local-mirror.example.com"}},
+				// Opposite order of the vendor’s mirrors.
+				// WARNING: The order in this case is unspecified by the ICSP specification, and may change at any time;
+				// this test case only ensures that the corner case is handled reasonably, and that the output is stable
+				// (i.e. the operator does not cause unnecessary changes in output objects.)
+				{source: "source.vendor2.com", mirrors: []string{"local-mirror2.example.com", "registry2.vendor2.com", "registry1.vendor2.com"}},
+			},
+		},
+		result: []mergedMirrorSet{
+			{source: "source.vendor.com", mirrors: []string{"local-mirror.example.com", "registry2.vendor.com"}},
+			{source: "source.vendor2.com", mirrors: []string{"local-mirror2.example.com", "registry1.vendor2.com", "registry2.vendor2.com"}},
+		},
+	},
+}
+
+func TestMergedICSPMirrorSets(t *testing.T) {
+	for _, tc := range mergedMirrorsetsTestcases {
+		t.Run(tc.name, func(t *testing.T) {
 			in := []*apioperatorsv1alpha1.ImageContentSourcePolicy{}
-			for _, rdms := range c.input {
+			for _, items := range tc.input {
+				rdms := []apioperatorsv1alpha1.RepositoryDigestMirrors{}
+				for _, item := range items {
+					if item.mirrorSourcePolicy != "" {
+						t.Skip("skip icsp test with mirrorSourcePolicy")
+					}
+					rdms = append(rdms, apioperatorsv1alpha1.RepositoryDigestMirrors{
+						Source:  item.source,
+						Mirrors: item.mirrors,
+					})
+				}
 				in = append(in, &apioperatorsv1alpha1.ImageContentSourcePolicy{
 					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
 						RepositoryDigestMirrors: rdms,
 					},
 				})
 			}
-			res, err := mergedMirrorSets(in)
-			if err != nil {
-				t.Errorf("Error %v", err)
-				return
+			res, err := mergedICSPMirrorSets(in)
+			require.Nil(t, err)
+			assert.Equal(t, tc.result, res)
+		})
+
+	}
+}
+
+func TestMergedTagMirrorSets(t *testing.T) {
+	for _, tc := range mergedMirrorsetsTestcases {
+		t.Run(tc.name, func(t *testing.T) {
+			in := []*apicfgv1.ImageTagMirrorSet{}
+			for _, items := range tc.input {
+				itm := []apicfgv1.ImageTagMirrors{}
+				for _, item := range items {
+					imgMirrors := []apicfgv1.ImageMirror{}
+					for _, m := range item.mirrors {
+						imgMirrors = append(imgMirrors, apicfgv1.ImageMirror(m))
+					}
+					itm = append(itm, apicfgv1.ImageTagMirrors{Source: item.source, Mirrors: imgMirrors, MirrorSourcePolicy: item.mirrorSourcePolicy})
+				}
+				in = append(in, &apicfgv1.ImageTagMirrorSet{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: itm,
+					},
+				})
 			}
-			assert.Equal(t, c.result, res)
+			res, err := mergedTagMirrorSets(in)
+			require.Nil(t, err)
+			assert.Equal(t, tc.result, res)
+		})
+	}
+}
+
+func TestMergedDigestMirrorSets(t *testing.T) {
+	for _, tc := range mergedMirrorsetsTestcases {
+		t.Run(tc.name, func(t *testing.T) {
+			in := []*apicfgv1.ImageDigestMirrorSet{}
+			for _, items := range tc.input {
+				idm := []apicfgv1.ImageDigestMirrors{}
+				for _, item := range items {
+					imgMirrors := []apicfgv1.ImageMirror{}
+					for _, m := range item.mirrors {
+						imgMirrors = append(imgMirrors, apicfgv1.ImageMirror(m))
+					}
+					idm = append(idm, apicfgv1.ImageDigestMirrors{Source: item.source, Mirrors: imgMirrors, MirrorSourcePolicy: item.mirrorSourcePolicy})
+				}
+				in = append(in, &apicfgv1.ImageDigestMirrorSet{
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: idm,
+					},
+				})
+			}
+			res, err := mergedDigestMirrorSets(in)
+			require.Nil(t, err)
+			assert.Equal(t, tc.result, res)
 		})
 	}
 }
@@ -268,6 +343,8 @@ func TestEditRegistriesConfig(t *testing.T) {
 	tests := []struct {
 		name              string
 		insecure, blocked []string
+		idmsRules         []*apicfgv1.ImageDigestMirrorSet
+		itmsRules         []*apicfgv1.ImageTagMirrorSet
 		icspRules         []*apioperatorsv1alpha1.ImageContentSourcePolicy
 		want              sysregistriesv2.V2RegistriesConf
 	}{
@@ -317,13 +394,15 @@ func TestEditRegistriesConfig(t *testing.T) {
 			},
 		},
 		{
-			name:     "insecure+blocked prefixes with wildcard entries",
-			insecure: []string{"insecure.com", "*.insecure-example.com", "*.insecure.blocked-example.com"},
-			blocked:  []string{"blocked.com", "*.blocked.insecure-example.com", "*.blocked-example.com"},
+			name:      "imageContentSourcePolicy",
+			insecure:  []string{"insecure.com", "*.insecure-example.com", "*.insecure.blocked-example.com"},
+			blocked:   []string{"blocked.com", "*.blocked.insecure-example.com", "*.blocked-example.com"},
+			idmsRules: []*apicfgv1.ImageDigestMirrorSet{},
+			itmsRules: []*apicfgv1.ImageTagMirrorSet{},
 			icspRules: []*apioperatorsv1alpha1.ImageContentSourcePolicy{
 				{
 					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
-						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{ // other.com is neither insecure nor blocked
+						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
 							{Source: "insecure.com/ns-i1", Mirrors: []string{"blocked.com/ns-b1", "other.com/ns-o1"}},
 							{Source: "blocked.com/ns-b/ns2-b", Mirrors: []string{"other.com/ns-o2", "insecure.com/ns-i2"}},
 							{Source: "other.com/ns-o3", Mirrors: []string{"insecure.com/ns-i2", "blocked.com/ns-b/ns3-b", "foo.insecure-example.com/bar"}},
@@ -338,35 +417,30 @@ func TestEditRegistriesConfig(t *testing.T) {
 						Endpoint: sysregistriesv2.Endpoint{
 							Location: "blocked.com/ns-b/ns2-b",
 						},
-						Blocked:            true,
-						MirrorByDigestOnly: true,
+						Blocked: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "other.com/ns-o2"},
-							{Location: "insecure.com/ns-i2", Insecure: true},
+							{Location: "other.com/ns-o2", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "insecure.com/ns-i2", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
-
 					{
 						Endpoint: sysregistriesv2.Endpoint{
 							Location: "insecure.com/ns-i1",
 							Insecure: true,
 						},
-						MirrorByDigestOnly: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "blocked.com/ns-b1"},
-							{Location: "other.com/ns-o1"},
+							{Location: "blocked.com/ns-b1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "other.com/ns-o1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
-
 					{
 						Endpoint: sysregistriesv2.Endpoint{
 							Location: "other.com/ns-o3",
 						},
-						MirrorByDigestOnly: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "insecure.com/ns-i2", Insecure: true},
-							{Location: "blocked.com/ns-b/ns3-b"},
-							{Location: "foo.insecure-example.com/bar", Insecure: true},
+							{Location: "insecure.com/ns-i2", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "blocked.com/ns-b/ns3-b", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "foo.insecure-example.com/bar", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
@@ -409,7 +483,317 @@ func TestEditRegistriesConfig(t *testing.T) {
 			},
 		},
 		{
+			name:     "insecure+blocked prefixes with wildcard entries",
+			insecure: []string{"insecure.com", "*.insecure-example.com", "*.insecure.blocked-example.com"},
+			blocked:  []string{"blocked.com", "*.blocked.insecure-example.com", "*.blocked-example.com"},
+			idmsRules: []*apicfgv1.ImageDigestMirrorSet{
+				{
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{ // other.com is neither insecure nor blocked
+							{Source: "insecure.com/ns-i1", Mirrors: []apicfgv1.ImageMirror{"blocked.com/ns-b1", "other.com/ns-o1"}},
+							{Source: "blocked.com/ns-b/ns2-b", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o2", "insecure.com/ns-i2"}},
+							{Source: "other.com/ns-o3", Mirrors: []apicfgv1.ImageMirror{"insecure.com/ns-i2", "blocked.com/ns-b/ns3-b", "foo.insecure-example.com/bar"}},
+						},
+					},
+				},
+			},
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "blocked.com/ns-b/ns2-b",
+						},
+						Blocked: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "other.com/ns-o2", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "insecure.com/ns-i2", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "insecure.com/ns-i1",
+							Insecure: true,
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "blocked.com/ns-b1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "other.com/ns-o1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "other.com/ns-o3",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "insecure.com/ns-i2", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "blocked.com/ns-b/ns3-b", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "foo.insecure-example.com/bar", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "blocked.com",
+						},
+						Blocked: true,
+					},
+					{
+						Prefix:  "*.blocked.insecure-example.com",
+						Blocked: true,
+						Endpoint: sysregistriesv2.Endpoint{
+							Insecure: true,
+						},
+					},
+					{
+						Prefix:  "*.blocked-example.com",
+						Blocked: true,
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "insecure.com",
+							Insecure: true,
+						},
+					},
+					{
+						Prefix: "*.insecure-example.com",
+						Endpoint: sysregistriesv2.Endpoint{
+							Insecure: true,
+						},
+					},
+					{
+						Prefix:  "*.insecure.blocked-example.com",
+						Blocked: true,
+						Endpoint: sysregistriesv2.Endpoint{
+							Insecure: true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "imageTagMirrorSet",
+			itmsRules: []*apicfgv1.ImageTagMirrorSet{
+				{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
+							{Source: "registry-a.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-a.com"}},
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-b.com"}},
+						},
+					},
+				},
+			},
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-a.com",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror-tag-1.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-b.com",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror-tag-1.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "imageDigestMirrorSet + imageTagMirrorSet",
+			idmsRules: []*apicfgv1.ImageDigestMirrorSet{
+				{
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{
+							{Source: "registry-a.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-a.com", "mirror-digest-2.registry-a.com"}},
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-b.com", "mirror-digest-2.registry-b.com"}},
+						},
+					},
+				},
+			},
+			itmsRules: []*apicfgv1.ImageTagMirrorSet{
+				{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
+							{Source: "registry-a.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-a.com", "mirror-tag-2.registry-a.com"}},
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-b.com", "mirror-tag-2.registry-b.com"}},
+						},
+					},
+				},
+			},
+
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-a.com",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+
+							{Location: "mirror-digest-1.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-digest-2.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag-1.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+							{Location: "mirror-tag-2.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-b.com",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror-digest-1.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-digest-2.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag-1.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+							{Location: "mirror-tag-2.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mirrorSourcePolicy",
+			idmsRules: []*apicfgv1.ImageDigestMirrorSet{
+				{
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{
+							{Source: "registry-a.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-a.com", "mirror-digest-2.registry-a.com"}, MirrorSourcePolicy: "NeverContactSource"},
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-b.com", "mirror-digest-2.registry-b.com"}},
+							{Source: "registry-c.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-c.com", "mirror-digest-2.registry-c.com"}},
+						},
+					},
+				},
+			},
+			itmsRules: []*apicfgv1.ImageTagMirrorSet{
+				{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-b.com", "mirror-tag-2.registry-b.com"}, MirrorSourcePolicy: "NeverContactSource"},
+						},
+					},
+				},
+			},
+
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-a.com",
+						},
+						Blocked: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror-digest-1.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-digest-2.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-b.com",
+						},
+						Blocked: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror-digest-1.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-digest-2.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag-1.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+							{Location: "mirror-tag-2.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "registry-c.com",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror-digest-1.registry-c.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-digest-2.registry-c.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+						},
+					},
+				},
+			},
+		},
+
+		{
 			name:     "insecure+blocked scopes inside a configured mirror",
+			insecure: []string{"primary.com/top/insecure"},
+			blocked:  []string{"primary.com/top/blocked"},
+			idmsRules: []*apicfgv1.ImageDigestMirrorSet{
+				{
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{
+							{Source: "primary.com/top", Mirrors: []apicfgv1.ImageMirror{"mirror.com/primary"}},
+							{Source: "primary.com/top/insecure/more-specific", Mirrors: []apicfgv1.ImageMirror{"mirror.com/more-specific"}},
+						},
+					},
+				},
+			},
+			itmsRules: []*apicfgv1.ImageTagMirrorSet{
+				{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
+							{Source: "primary.com/top", Mirrors: []apicfgv1.ImageMirror{"mirror-tag.com/primary"}},
+							{Source: "primary.com/top/insecure/more-specific", Mirrors: []apicfgv1.ImageMirror{"mirror-tag.com/more-specific"}},
+						},
+					},
+				},
+			},
+			want: sysregistriesv2.V2RegistriesConf{
+				UnqualifiedSearchRegistries: []string{"registry.access.redhat.com", "docker.io"},
+				Registries: []sysregistriesv2.Registry{
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top",
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag.com/primary", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/insecure/more-specific",
+							Insecure: true,
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/more-specific", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag.com/more-specific", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/blocked",
+						},
+						Blocked: true,
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary/blocked", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag.com/primary/blocked", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "primary.com/top/insecure",
+							Insecure: true,
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "mirror.com/primary/insecure", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag.com/primary/insecure", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:     "insecure+blocked scopes inside a configured mirror in ImageContentSourcePolicy",
 			insecure: []string{"primary.com/top/insecure"},
 			blocked:  []string{"primary.com/top/blocked"},
 			icspRules: []*apioperatorsv1alpha1.ImageContentSourcePolicy{
@@ -429,9 +813,8 @@ func TestEditRegistriesConfig(t *testing.T) {
 						Endpoint: sysregistriesv2.Endpoint{
 							Location: "primary.com/top",
 						},
-						MirrorByDigestOnly: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "mirror.com/primary"},
+							{Location: "mirror.com/primary", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
@@ -439,19 +822,17 @@ func TestEditRegistriesConfig(t *testing.T) {
 							Location: "primary.com/top/insecure/more-specific",
 							Insecure: true,
 						},
-						MirrorByDigestOnly: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "mirror.com/more-specific"},
+							{Location: "mirror.com/more-specific", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
 						Endpoint: sysregistriesv2.Endpoint{
 							Location: "primary.com/top/blocked",
 						},
-						Blocked:            true,
-						MirrorByDigestOnly: true,
+						Blocked: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "mirror.com/primary/blocked"},
+							{Location: "mirror.com/primary/blocked", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
@@ -459,9 +840,8 @@ func TestEditRegistriesConfig(t *testing.T) {
 							Location: "primary.com/top/insecure",
 							Insecure: true,
 						},
-						MirrorByDigestOnly: true,
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "mirror.com/primary/insecure"},
+							{Location: "mirror.com/primary/insecure", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 				},
@@ -474,14 +854,14 @@ func TestEditRegistriesConfig(t *testing.T) {
 			config := sysregistriesv2.V2RegistriesConf{}
 			_, err := toml.Decode(string(templateBytes), &config)
 			require.NoError(t, err)
-			err = EditRegistriesConfig(&config, tt.insecure, tt.blocked, tt.icspRules)
+			err = EditRegistriesConfig(&config, tt.insecure, tt.blocked, tt.icspRules, tt.idmsRules, tt.itmsRules)
 			if err != nil {
 				t.Errorf("updateRegistriesConfig() error = %v", err)
 				return
 			}
 			// This assumes a specific order of Registries entries, which does not actually matter; ideally, this would
 			// sort the two arrays before comparing, but right now hard-coding the order works well enough.
-			require.Equal(t, tt.want, config)
+			require.Equal(t, tt.want, config, tt.name)
 			// Ensure that the generated configuration is actually valid.
 			buf := bytes.Buffer{}
 			err = toml.NewEncoder(&buf).Encode(config)
@@ -495,6 +875,70 @@ func TestEditRegistriesConfig(t *testing.T) {
 				SystemRegistriesConfPath: registriesConf.Name(),
 			})
 			assert.NoError(t, err)
+		})
+	}
+
+	// should fail if idms or itms exist with icsp
+	failtests := []struct {
+		name         string
+		idmsNotEmpty bool
+		itmsNotEmpty bool
+		icspNotEmpty bool
+	}{
+
+		{
+			name:         "imageContentSourcePolicy + imageDigestMirrorSet",
+			idmsNotEmpty: true,
+			icspNotEmpty: true,
+		},
+		{
+			name:         "imageContentSourcePolicy + imageTagMirrorSet",
+			itmsNotEmpty: true,
+			icspNotEmpty: true,
+		},
+		{
+			name:         "ImageContentSourcePolicy + imageDigestMirrorSet + ImageTagMirrorSet",
+			idmsNotEmpty: true,
+			itmsNotEmpty: true,
+			icspNotEmpty: true,
+		},
+	}
+	for _, tt := range failtests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create config from templateBytes to get a fresh copy we can edit.
+			config := sysregistriesv2.V2RegistriesConf{}
+			_, err := toml.Decode(string(templateBytes), &config)
+			require.NoError(t, err)
+			icsps := []*apioperatorsv1alpha1.ImageContentSourcePolicy{}
+			idmss := []*apicfgv1.ImageDigestMirrorSet{}
+			itmss := []*apicfgv1.ImageTagMirrorSet{}
+			if tt.idmsNotEmpty {
+				idmss = append(idmss, &apicfgv1.ImageDigestMirrorSet{
+
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-b.com"}},
+						},
+					}})
+			}
+			if tt.itmsNotEmpty {
+				itmss = append(itmss, &apicfgv1.ImageTagMirrorSet{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
+							{Source: "registry-c.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-c.com"}},
+						},
+					}})
+			}
+			if tt.icspNotEmpty {
+				icsps = append(icsps, &apioperatorsv1alpha1.ImageContentSourcePolicy{
+					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
+						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
+							{Source: "registry-a.com", Mirrors: []string{"mirror-icsp-1.registry-a.com"}},
+						},
+					}})
+			}
+			err = EditRegistriesConfig(&config, nil, nil, icsps, idmss, itmss)
+			assert.NotNil(t, err)
 		})
 	}
 }
