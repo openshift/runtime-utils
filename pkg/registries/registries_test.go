@@ -844,7 +844,7 @@ func TestEditRegistriesConfig(t *testing.T) {
 			},
 		},
 		{
-			name:      "imageContentSourcePolicy+imageDigestMirrorSet",
+			name:      "imageContentSourcePolicy+imageDigestMirrorSet merging",
 			insecure:  []string{"insecure.com", "*.insecure-example.com", "*.insecure.blocked-example.com"},
 			blocked:   []string{"blocked.com", "*.blocked.insecure-example.com", "*.blocked-example.com"},
 			itmsRules: []*apicfgv1.ImageTagMirrorSet{},
@@ -853,6 +853,8 @@ func TestEditRegistriesConfig(t *testing.T) {
 					Spec: apicfgv1.ImageDigestMirrorSetSpec{
 						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{ // other.com is neither insecure nor blocked
 							{Source: "insecure.com/ns-idms-i1", Mirrors: []apicfgv1.ImageMirror{"blocked.com/ns-b1", "other.com/ns-o1"}},
+							{Source: "insecure.com/ns-dupe-i1", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o3"}},
+							{Source: "insecure.com/ns-dupe-i1", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o1"}},
 							{Source: "blocked.com/ns-idms-b/ns2-b", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o2", "insecure.com/ns-i2"}},
 							{Source: "other.com/ns-idms-o3", Mirrors: []apicfgv1.ImageMirror{"insecure.com/ns-i2", "blocked.com/ns-b/ns3-b", "foo.insecure-example.com/bar"}},
 						},
@@ -866,6 +868,7 @@ func TestEditRegistriesConfig(t *testing.T) {
 							{Source: "insecure.com/ns-icsp-i1", Mirrors: []string{"blocked.com/ns-b1", "other.com/ns-o1"}},
 							{Source: "blocked.com/ns-icsp-b/ns2-b", Mirrors: []string{"other.com/ns-o2", "insecure.com/ns-i2"}},
 							{Source: "other.com/ns-icsp-o3", Mirrors: []string{"insecure.com/ns-i2", "blocked.com/ns-b/ns3-b", "foo.insecure-example.com/bar"}},
+							{Source: "insecure.com/ns-dupe-i1", Mirrors: []string{"other.com/ns-o2"}},
 						},
 					},
 				},
@@ -891,6 +894,17 @@ func TestEditRegistriesConfig(t *testing.T) {
 						Mirrors: []sysregistriesv2.Endpoint{
 							{Location: "other.com/ns-o2", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 							{Location: "insecure.com/ns-i2", Insecure: true, PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+						},
+					},
+					{
+						Endpoint: sysregistriesv2.Endpoint{
+							Location: "insecure.com/ns-dupe-i1",
+							Insecure: true,
+						},
+						Mirrors: []sysregistriesv2.Endpoint{
+							{Location: "other.com/ns-o1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "other.com/ns-o2", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "other.com/ns-o3", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
@@ -973,39 +987,30 @@ func TestEditRegistriesConfig(t *testing.T) {
 			},
 		},
 		{
-			name:      "imageContentSourcePolicy+imageDigestMirrorSet Confict",
-			insecure:  []string{},
-			blocked:   []string{},
-			itmsRules: []*apicfgv1.ImageTagMirrorSet{},
-			idmsRules: []*apicfgv1.ImageDigestMirrorSet{
-				{
-					Spec: apicfgv1.ImageDigestMirrorSetSpec{
-						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{ // other.com is neither insecure nor blocked
-							{Source: "insecure.com/ns-dupe-i1", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o1"}},
-							{Source: "insecure.com/ns-dupe-i1", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o3"}},
-						},
-					},
-				},
-				{
-					Spec: apicfgv1.ImageDigestMirrorSetSpec{
-						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{ // other.com is neither insecure nor blocked
-							{Source: "insecure.com/ns-idms-i1", Mirrors: []apicfgv1.ImageMirror{"other.com/ns-o1"}},
-						},
-					},
-				},
-			},
+			name: "imageContentSourcePolicy+imageDigestMirrorSet+imageTagMirrorSet",
 			icspRules: []*apioperatorsv1alpha1.ImageContentSourcePolicy{
 				{
 					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
 						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-							{Source: "insecure.com/ns-dupe-i1", Mirrors: []string{"other.com/ns-o2"}},
+							{Source: "registry-a.com", Mirrors: []string{"mirror-icsp-1.registry-a.com"}},
 						},
 					},
 				},
+			},
+			idmsRules: []*apicfgv1.ImageDigestMirrorSet{
 				{
-					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
-						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-							{Source: "insecure.com/ns-icsp-i1", Mirrors: []string{"other.com/ns-o1"}},
+					Spec: apicfgv1.ImageDigestMirrorSetSpec{
+						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{
+							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-b.com"}},
+						},
+					},
+				},
+			},
+			itmsRules: []*apicfgv1.ImageTagMirrorSet{
+				{
+					Spec: apicfgv1.ImageTagMirrorSetSpec{
+						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
+							{Source: "registry-c.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-c.com"}},
 						},
 					},
 				},
@@ -1015,28 +1020,26 @@ func TestEditRegistriesConfig(t *testing.T) {
 				Registries: []sysregistriesv2.Registry{
 					{
 						Endpoint: sysregistriesv2.Endpoint{
-							Location: "insecure.com/ns-dupe-i1",
+							Location: "registry-a.com",
 						},
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "other.com/ns-o1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
-							{Location: "other.com/ns-o2", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
-							{Location: "other.com/ns-o3", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-icsp-1.registry-a.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
 						Endpoint: sysregistriesv2.Endpoint{
-							Location: "insecure.com/ns-icsp-i1",
+							Location: "registry-b.com",
 						},
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "other.com/ns-o1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-digest-1.registry-b.com", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
 						},
 					},
 					{
 						Endpoint: sysregistriesv2.Endpoint{
-							Location: "insecure.com/ns-idms-i1",
+							Location: "registry-c.com",
 						},
 						Mirrors: []sysregistriesv2.Endpoint{
-							{Location: "other.com/ns-o1", PullFromMirror: sysregistriesv2.MirrorByDigestOnly},
+							{Location: "mirror-tag-1.registry-c.com", PullFromMirror: sysregistriesv2.MirrorByTagOnly},
 						},
 					},
 				},
@@ -1070,140 +1073,6 @@ func TestEditRegistriesConfig(t *testing.T) {
 				SystemRegistriesConfPath: registriesConf.Name(),
 			})
 			assert.NoError(t, err)
-		})
-	}
-
-	successTests := []struct {
-		name         string
-		idmsNotEmpty bool
-		itmsNotEmpty bool
-		icspNotEmpty bool
-		want         []byte
-	}{
-		{
-			name:         "imageContentSourcePolicy + imageDigestMirrorSet",
-			idmsNotEmpty: true,
-			icspNotEmpty: true,
-			want: []byte(`unqualified-search-registries = ["registry.access.redhat.com", "docker.io"]
-short-name-mode = ""
-
-[[registry]]
-  prefix = ""
-  location = "registry-a.com"
-
-  [[registry.mirror]]
-    location = "mirror-icsp-1.registry-a.com"
-    pull-from-mirror = "digest-only"
-
-[[registry]]
-  prefix = ""
-  location = "registry-b.com"
-
-  [[registry.mirror]]
-    location = "mirror-digest-1.registry-b.com"
-    pull-from-mirror = "digest-only"
-`),
-		},
-		{
-			name:         "imageContentSourcePolicy + imageTagMirrorSet",
-			itmsNotEmpty: true,
-			icspNotEmpty: true,
-			want: []byte(`unqualified-search-registries = ["registry.access.redhat.com", "docker.io"]
-short-name-mode = ""
-
-[[registry]]
-  prefix = ""
-  location = "registry-a.com"
-
-  [[registry.mirror]]
-    location = "mirror-icsp-1.registry-a.com"
-    pull-from-mirror = "digest-only"
-
-[[registry]]
-  prefix = ""
-  location = "registry-c.com"
-
-  [[registry.mirror]]
-    location = "mirror-tag-1.registry-c.com"
-    pull-from-mirror = "tag-only"
-`),
-		},
-		{
-			name:         "ImageContentSourcePolicy + imageDigestMirrorSet + ImageTagMirrorSet",
-			idmsNotEmpty: true,
-			itmsNotEmpty: true,
-			icspNotEmpty: true,
-			want: []byte(`unqualified-search-registries = ["registry.access.redhat.com", "docker.io"]
-short-name-mode = ""
-
-[[registry]]
-  prefix = ""
-  location = "registry-a.com"
-
-  [[registry.mirror]]
-    location = "mirror-icsp-1.registry-a.com"
-    pull-from-mirror = "digest-only"
-
-[[registry]]
-  prefix = ""
-  location = "registry-b.com"
-
-  [[registry.mirror]]
-    location = "mirror-digest-1.registry-b.com"
-    pull-from-mirror = "digest-only"
-
-[[registry]]
-  prefix = ""
-  location = "registry-c.com"
-
-  [[registry.mirror]]
-    location = "mirror-tag-1.registry-c.com"
-    pull-from-mirror = "tag-only"
-`),
-		},
-	}
-	for _, tt := range successTests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create config from templateBytes to get a fresh copy we can edit.
-			config := sysregistriesv2.V2RegistriesConf{}
-			_, err := toml.Decode(string(templateBytes), &config)
-			require.NoError(t, err)
-			icsps := []*apioperatorsv1alpha1.ImageContentSourcePolicy{}
-			idmss := []*apicfgv1.ImageDigestMirrorSet{}
-			itmss := []*apicfgv1.ImageTagMirrorSet{}
-			if tt.idmsNotEmpty {
-				idmss = append(idmss, &apicfgv1.ImageDigestMirrorSet{
-					Spec: apicfgv1.ImageDigestMirrorSetSpec{
-						ImageDigestMirrors: []apicfgv1.ImageDigestMirrors{
-							{Source: "registry-b.com", Mirrors: []apicfgv1.ImageMirror{"mirror-digest-1.registry-b.com"}},
-						},
-					},
-				})
-			}
-			if tt.itmsNotEmpty {
-				itmss = append(itmss, &apicfgv1.ImageTagMirrorSet{
-					Spec: apicfgv1.ImageTagMirrorSetSpec{
-						ImageTagMirrors: []apicfgv1.ImageTagMirrors{
-							{Source: "registry-c.com", Mirrors: []apicfgv1.ImageMirror{"mirror-tag-1.registry-c.com"}},
-						},
-					},
-				})
-			}
-			if tt.icspNotEmpty {
-				icsps = append(icsps, &apioperatorsv1alpha1.ImageContentSourcePolicy{
-					Spec: apioperatorsv1alpha1.ImageContentSourcePolicySpec{
-						RepositoryDigestMirrors: []apioperatorsv1alpha1.RepositoryDigestMirrors{
-							{Source: "registry-a.com", Mirrors: []string{"mirror-icsp-1.registry-a.com"}},
-						},
-					},
-				})
-			}
-			err = EditRegistriesConfig(&config, nil, nil, icsps, idmss, itmss)
-			assert.Nil(t, err)
-			buf := bytes.Buffer{}
-			err = toml.NewEncoder(&buf).Encode(config)
-			require.NoError(t, err)
-			assert.Equal(t, buf.Bytes(), tt.want)
 		})
 	}
 }
